@@ -8,3 +8,8 @@ runs/
 dataset/
 *.pt
 !yolo11n.pt
+
+# Cấu hình đường dẫn dataset theo máy
+training/starter100/data-local.yaml
+
+*.cache

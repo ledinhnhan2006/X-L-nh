@@ -1,0 +1,48 @@
+{
+  "images": 100,
+  "train_images": 80,
+  "val_images": 20,
+  "duplicate_sha256": 0,
+  "seed_selection": 42,
+  "seed_split": 0,
+  "mirror_commit": "075a8fd1f1ec671e4e469ee8b5ab6badcbda3db1",
+  "labels_archive_sha256": "51a5175c894a7a1010f90eb4cba613473445f02633b684ed46c0292a997d0234",
+  "classes": {
+    "backpack": {
+      "train_images": 13,
+      "val_images": 5,
+      "train_boxes": 18,
+      "val_boxes": 8
+    },
+    "handbag": {
+      "train_images": 18,
+      "val_images": 6,
+      "train_boxes": 29,
+      "val_boxes": 13
+    },
+    "bottle": {
+      "train_images": 19,
+      "val_images": 4,
+      "train_boxes": 66,
+      "val_boxes": 10
+    },
+    "chair": {
+      "train_images": 35,
+      "val_images": 5,
+      "train_boxes": 106,
+      "val_boxes": 30
+    },
+    "laptop": {
+      "train_images": 14,
+      "val_images": 3,
+      "train_boxes": 20,
+      "val_boxes": 3
+    },
+    "book": {
+      "train_images": 16,
+      "val_images": 5,
+      "train_boxes": 86,
+      "val_boxes": 29
+    }
+  }
+}

@@ -1,0 +1,11 @@
+# Six-class starter subset only; not the full 12-class dataset.
+path: .
+train: images/train
+val: images/val
+names:
+  0: backpack
+  1: handbag
+  2: bottle
+  3: chair
+  4: laptop
+  5: book

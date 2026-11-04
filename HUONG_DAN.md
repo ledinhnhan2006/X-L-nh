@@ -62,3 +62,7 @@ Kiểm tra trang web, health, tải hai ảnh mẫu, điểm và tổng điểm 
 ## Chế độ mới: YOLO theo vị trí và diện tích
 
 Chọn cách chấm YOLO trong giao diện, khoanh vùng sàn/giường/bàn/tủ rồi sửa nơi được đặt cho 12 lớp. Hướng dẫn từng bước thu thập ảnh, gán nhãn, huấn luyện và dùng mô hình mới: [training/CHUAN_BI_DU_LIEU.md](training/CHUAN_BI_DU_LIEU.md). Chưa có trọng số đã huấn luyện cho 12 lớp; mô hình nền chỉ nhận một số lớp.
+
+## Có sẵn 100 ảnh để thử huấn luyện
+
+Xem [training/starter100/README.md](training/starter100/README.md): 100 ảnh COCO có nhãn cho 6 lớp, chia 80 train/20 val. Chưa bao phủ đủ 12 lớp, chưa có trọng số được train từ bộ này.
