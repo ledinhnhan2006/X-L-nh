@@ -1,5 +1,9 @@
 @echo off
 cd /d "%~dp0"
+echo Kiem tra Python 3.12...
+py -3.12 --version
+if errorlevel 1 goto fail
+echo Dang chuan bi moi truong Python, vui long cho...
 if not exist .venv\Scripts\python.exe (
   py -3.12 -m venv .venv
   if errorlevel 1 goto fail

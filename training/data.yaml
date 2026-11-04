@@ -1,0 +1,18 @@
+# Điền ảnh và nhãn thật theo hướng dẫn trước khi train.
+path: ./dataset
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: bag
+  1: clothes
+  2: blanket
+  3: pillow
+  4: footwear
+  5: trash
+  6: handbag
+  7: laptop
+  8: book
+  9: bottle
+  10: chair
+  11: backpack

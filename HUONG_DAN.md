@@ -58,3 +58,7 @@ python -m unittest discover -s tests -v
 ```
 
 Kiểm tra trang web, health, tải hai ảnh mẫu, điểm và tổng điểm phạt, YOLO, ảnh trắng không YOLO và dữ liệu tải lên không hợp lệ. Giao diện được kiểm tra thêm bằng Chromium: ảnh mẫu, tải tệp, bật/tắt YOLO và độ rộng màn hình điện thoại.
+
+## Chế độ mới: YOLO theo vị trí và diện tích
+
+Chọn cách chấm YOLO trong giao diện, khoanh vùng sàn/giường/bàn/tủ rồi sửa nơi được đặt cho 12 lớp. Hướng dẫn từng bước thu thập ảnh, gán nhãn, huấn luyện và dùng mô hình mới: [training/CHUAN_BI_DU_LIEU.md](training/CHUAN_BI_DU_LIEU.md). Chưa có trọng số đã huấn luyện cho 12 lớp; mô hình nền chỉ nhận một số lớp.

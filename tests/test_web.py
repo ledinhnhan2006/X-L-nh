@@ -5,7 +5,8 @@ import unittest
 import urllib.request
 import urllib.error
 
-BASE = 'http://127.0.0.1:8000'
+import os
+BASE = os.environ.get('TEST_BASE_URL', 'http://127.0.0.1:8000')
 ROOT = Path(__file__).resolve().parents[1]
 
 class WebTests(unittest.TestCase):
@@ -27,12 +28,30 @@ class WebTests(unittest.TestCase):
                 self.assertIsNone(result['yolo_error'])
                 self.assertTrue(result['yolo_image'].startswith('data:image/jpeg;base64,'))
                 print(image.name, result['score'], len(result['detections']), 'YOLO detections')
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            self.request({'image':base64.b64encode(b'not an image').decode()})
+        self.assertEqual(caught.exception.code,400)
 
     def test_invalid_upload(self):
         for payload in [{'image':'not base64'}, {'image':base64.b64encode(b'hello').decode()}, []]:
             with self.subTest(payload=payload), self.assertRaises(urllib.error.HTTPError) as caught:
                 self.request(payload)
             self.assertEqual(caught.exception.code, 400)
+
+    def test_placement_mode(self):
+        from placement_score import CLASSES
+        payload = {'image':base64.b64encode((ROOT/'room.jpg').read_bytes()).decode(),
+                   'yolo':True, 'scoring_mode':'placement',
+                   'zones':[{'kind':'floor', 'points':[[0,0],[1,0],[1,1],[0,1]]}],
+                   'rules':{k:list(v[1]) for k,v in CLASSES.items()}}
+        result=self.request(payload)
+        self.assertEqual(result['placement']['wrong'],2)
+        self.assertEqual(result['placement']['unknown'],3)
+        self.assertLess(result['score'],100)
+        payload['zones']=[]
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            self.request(payload)
+        self.assertEqual(caught.exception.code,400)
 
     def test_without_yolo(self):
         from PIL import Image

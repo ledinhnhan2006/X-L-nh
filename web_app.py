@@ -9,11 +9,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Lock, Timer
 
 os.environ.setdefault('MPLBACKEND', 'Agg')
+os.environ.setdefault('YOLO_AUTOINSTALL', 'false')
 import cv2
 import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
 from chamdiem import calculate_score
+from placement_score import score_placement, CLASSES, ZONES
 
+OPEN_IMAGE = Image.open  # Giữ bộ đọc Pillow trước khi Ultralytics thay đổi Image.open.
 ROOT = Path(__file__).resolve().parent
 MODEL = None
 MODEL_LOCK = Lock()
@@ -30,7 +33,7 @@ def image_url(image):
 def analyze(data):
     try:
         raw = base64.b64decode(data['image'], validate=True)
-        with Image.open(io.BytesIO(raw)) as source:
+        with OPEN_IMAGE(io.BytesIO(raw), formats=('JPEG', 'PNG', 'BMP', 'WEBP')) as source:
             if source.width * source.height > 25_000_000:
                 raise ValueError('Ảnh quá lớn. Vui lòng chọn ảnh dưới 25 triệu pixel.')
             rgb = np.array(ImageOps.exif_transpose(source).convert('RGB'))
@@ -48,19 +51,42 @@ def analyze(data):
                   regions=count, density=density, area=area,
                   penalties=penalties, deductions=[p*w for p,w in zip(penalties, weights)],
                   contour_image=image_url(annotated), detections=[], yolo_image=None, yolo_error=None)
+    placement = data.get('scoring_mode') == 'placement'
+    if placement:
+        from placement_score import validate_settings
+        validate_settings(data.get('zones', []), data.get('rules', {}))
+        if not data.get('zones'):
+            raise ValueError('Hãy khoanh ít nhất một vùng trước khi chấm theo vị trí.')
+        if not data.get('yolo'):
+            raise ValueError('Chấm theo vị trí cần bật YOLO.')
     if data.get('yolo', False):
         try:
             global MODEL
             with MODEL_LOCK:
                 if MODEL is None:
                     from ultralytics import YOLO
-                    MODEL = YOLO(str(ROOT / 'yolo11n.pt'))
+                    model_path = Path(os.environ.get('YOLO_MODEL_PATH', str(ROOT / 'yolo11n.pt'))).expanduser()
+                    if not model_path.is_file():
+                        raise FileNotFoundError('Không tìm thấy mô hình YOLO đã cấu hình.')
+                    MODEL = YOLO(str(model_path))
                 prediction = MODEL.predict(image, device='cpu', conf=.25, verbose=False)[0]
                 output['yolo_image'] = image_url(prediction.plot())
                 output['detections'] = [dict(name=MODEL.names[int(box.cls.item())],
                     confidence=float(box.conf.item()), box=box.xyxy[0].tolist()) for box in prediction.boxes]
         except Exception:
             output['yolo_error'] = 'Không chạy được YOLO. Kiểm tra thư viện ultralytics và tệp yolo11n.pt. Điểm OpenCV vẫn có kết quả.'
+    if placement:
+        if output['yolo_error']:
+            output['score'] = None
+            output['label'] = 'Không chấm được: YOLO gặp lỗi'
+        else:
+            output['placement'] = score_placement(output['detections'], image.shape, data['zones'], data['rules'])
+            output['score'] = output['placement']['score']
+            value = output['score']
+            output['label'] = ('Chưa đủ dữ liệu để chấm' if value is None else LABELS[3 if value >= 80 else 2 if value >= 60 else 1 if value >= 40 else 0])
+    output['scoring_mode'] = 'placement' if placement else 'opencv'
+    if MODEL is not None:
+        output['model_classes'] = list(MODEL.names.values())
     return output
 
 
@@ -77,6 +103,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/':
             self.send(200, (ROOT / 'web' / 'index.html').read_bytes(), 'text/html; charset=utf-8')
+        elif self.path == '/settings':
+            self.send(200, {'classes': {k:{'label':v[0], 'allowed':v[1]} for k,v in CLASSES.items()}, 'zones':ZONES})
+        elif self.path == '/placement.js':
+            self.send(200, (ROOT / 'web' / 'placement.js').read_bytes(), 'text/javascript; charset=utf-8')
         elif self.path == '/health':
             self.send(200, {'status': 'ok'})
         elif self.path == '/sample':
