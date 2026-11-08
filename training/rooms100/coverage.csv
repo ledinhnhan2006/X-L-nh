@@ -1,0 +1,13 @@
+class,status,source_annotated_images,example_files,note
+bag,not_confirmed_needs_more_photos,,,Image-level inventory only; no 12-class bounding boxes supplied.
+clothes,visually_seen_needs_annotation,,images/room_055_coco_000000022192.jpg,Image-level inventory only; no 12-class bounding boxes supplied.
+blanket,visually_seen_needs_annotation,,images/room_001_coco_000000226592.jpg,Image-level inventory only; no 12-class bounding boxes supplied.
+pillow,visually_seen_needs_annotation,,images/room_003_coco_000000066523.jpg,Image-level inventory only; no 12-class bounding boxes supplied.
+footwear,visually_seen_needs_annotation,,images/room_018_coco_000000200252.jpg,Image-level inventory only; no 12-class bounding boxes supplied.
+trash,not_confirmed_needs_more_photos,,,Image-level inventory only; no 12-class bounding boxes supplied.
+handbag,source_class_present,6,images/room_055_coco_000000022192.jpg;images/room_067_coco_000000580410.jpg;images/room_068_coco_000000455937.jpg,Image-level inventory only; no 12-class bounding boxes supplied.
+laptop,source_class_present,20,images/room_009_coco_000000134882.jpg;images/room_014_coco_000000379441.jpg;images/room_041_coco_000000433192.jpg,Image-level inventory only; no 12-class bounding boxes supplied.
+book,source_class_present,47,images/room_006_coco_000000106389.jpg;images/room_009_coco_000000134882.jpg;images/room_011_coco_000000014038.jpg,Image-level inventory only; no 12-class bounding boxes supplied.
+bottle,source_class_present,11,images/room_010_coco_000000385997.jpg;images/room_011_coco_000000014038.jpg;images/room_020_coco_000000355257.jpg,Image-level inventory only; no 12-class bounding boxes supplied.
+chair,source_class_present,57,images/room_005_coco_000000159458.jpg;images/room_006_coco_000000106389.jpg;images/room_007_coco_000000218091.jpg,Image-level inventory only; no 12-class bounding boxes supplied.
+backpack,source_class_present,5,images/room_021_coco_000000294783.jpg;images/room_047_coco_000000393569.jpg;images/room_064_coco_000000370478.jpg,Image-level inventory only; no 12-class bounding boxes supplied.
