@@ -3,13 +3,13 @@
 ## Mở app với mô hình đã huấn luyện của bạn
 
 1. Tải bản mới từ GitHub: Code → Download ZIP. Giải nén vào thư mục mới, không làm mất thư mục/mô hình cũ.
-2. Chép tệp `weights.pt` đã tải từ Roboflow vào **cùng thư mục với `web_app.py`**. Tệp của bạn không nằm sẵn trên GitHub; không cần tải nó lên GitHub.
+2. Bản GitHub đã kèm `weights.pt` do bạn cung cấp. Không cần chép thêm để dùng mô hình này. Nếu có mô hình mới, thay tệp cạnh `web_app.py` rồi khởi động lại app.
 3. Lần đầu chạy `start_windows.bat` để tạo môi trường và cài thư viện. Những lần sau nhấp đúp `start_app.bat`, không cần gõ CMD hoặc cài lại thư viện.
 4. Nếu dùng môi trường cũ, có thể chạy trực tiếp `start_app.bat` khi `.venv` đã tồn tại và hoạt động trên máy Windows đó. Không sao chép `.venv` từ Linux/máy khác.
 5. App mặc định tìm `weights.pt`; biến `YOLO_MODEL_PATH` nếu đã được đặt sẽ ưu tiên hơn. Muốn quay lại mặc định trong CMD, chạy `set YOLO_MODEL_PATH=` trước khi mở app. App hiển thị tên tệp và các lớp thực tế đã nạp.
 6. Nếu không có tệp, mô hình không tương thích hoặc nạp lỗi, app báo lỗi và không tự dùng yolo11n.pt để thay thế. Gửi lỗi nguyên văn nếu xảy ra. Mô hình chỉ được xác minh trên máy bạn sau khi đặt checkpoint vào app.
 
-App mới không kèm checkpoint Roboflow cá nhân. Phiên bản thư viện hiện giữ nguyên bản đã kiểm thử; khả năng nạp một checkpoint YOLO26 cụ thể cần kiểm tra với chính tệp đó.
+Đã nạp và chạy được checkpoint Roboflow bạn cung cấp với phiên bản thư viện hiện có. Mô hình có 11 lớp và thiếu backpack; app hiển thị cảnh báo. Không tự thêm được một lớp bằng cách sửa danh sách tên.
 
 ## Cách chấm một ảnh
 
@@ -68,4 +68,4 @@ Ví dụ một vật rác sai chỗ (10), một áo sai chỗ (6), tổng khung 
 
 ## Đã và chưa xác minh
 
-Kiểm tra công thức, giới hạn điểm, mức phạt từng lớp, vùng chồng nhau, thiếu thông tin, thiếu checkpoint, API và thao tác giao diện. Kiểm thử suy luận dùng yolo11n.pt qua cấu hình tường minh trong môi trường phát triển, không đại diện cho checkpoint Roboflow của bạn. Chưa nhận được tệp weights.pt cá nhân để kiểm tra khả năng nạp và độ chính xác của mô hình đó. Chưa có đánh giá độc lập chứng minh điểm v2 chính xác hơn theo cảm nhận con người.
+Kiểm tra công thức, giới hạn điểm, mức phạt từng lớp, vùng chồng nhau, thiếu thông tin, thiếu checkpoint, API và thao tác giao diện. Đã kiểm tra với weights.pt thực tế bạn cung cấp: nạp mô hình, đọc 11 lớp, suy luận trên ảnh mẫu, chấm theo vùng và quy tắc, tải ảnh/báo cáo. Việc suy luận thành công không chứng minh độ chính xác trên ảnh mới; chưa có bộ ảnh gán nhãn độc lập để đánh giá precision/recall/mAP của checkpoint này. Chưa có đánh giá độc lập chứng minh điểm v2 chính xác hơn theo cảm nhận con người.

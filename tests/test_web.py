@@ -14,6 +14,12 @@ class WebTests(unittest.TestCase):
         req = urllib.request.Request(BASE + '/api/analyze', data=json.dumps(payload).encode(), headers={'Content-Type':'application/json'})
         return json.load(urllib.request.urlopen(req, timeout=90))
 
+    def test_model_status(self):
+        info=json.load(urllib.request.urlopen(BASE+'/model'))
+        self.assertTrue(info['ready'],info)
+        self.assertEqual(info['file'],os.environ.get('TEST_MODEL_FILE','weights.pt'))
+        self.assertGreater(len(info['classes']),0)
+
     def test_page(self):
         self.assertIn('Chấm điểm ảnh', urllib.request.urlopen(BASE).read().decode())
         self.assertEqual(json.load(urllib.request.urlopen(BASE + '/health'))['status'], 'ok')
@@ -43,11 +49,16 @@ class WebTests(unittest.TestCase):
         payload = {'image':base64.b64encode((ROOT/'room.jpg').read_bytes()).decode(),
                    'yolo':True, 'scoring_mode':'placement',
                    'zones':[{'kind':'floor', 'points':[[0,0],[1,0],[1,1],[0,1]]}],
-                   'rules':{k:list(v[1]) for k,v in CLASSES.items()}}
+                   'rules':{k:['floor'] for k in CLASSES}}
         result=self.request(payload)
-        self.assertEqual(result['placement']['wrong'],2)
-        self.assertEqual(result['placement']['unknown'],3)
-        self.assertLess(result['score'],100)
+        self.assertGreater(result['placement']['evaluated'],0)
+        self.assertEqual(result['placement']['wrong'],0)
+        self.assertEqual(result['score'],100)
+        payload['rules']['book']=[]
+        forbidden=self.request(payload)
+        self.assertGreater(forbidden['placement']['wrong'],0)
+        self.assertLess(forbidden['score'],result['score'])
+        self.assertEqual(forbidden['placement']['method'],'placement_v2')
         payload['zones']=[]
         with self.assertRaises(urllib.error.HTTPError) as caught:
             self.request(payload)
