@@ -1,3 +1,5 @@
+> **Bản mới:** Chép `weights.pt` cạnh `web_app.py`; lần đầu chạy `start_windows.bat`, sau đó mở `start_app.bat`. Xem [phương pháp YOLO v2](PHUONG_PHAP_CHAM_DIEM.md) cho công thức và hướng dẫn hiện hành. Các phần bên dưới mô tả thêm quy trình OpenCV/phiên bản trước.
+
 # Chạy giao diện Góc Gọn
 
 ## Windows (máy của bạn)

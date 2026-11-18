@@ -8,8 +8,8 @@ CLASSES = {
     'clothes': ('Quần áo', ['cabinet']),
     'blanket': ('Chăn', ['bed', 'cabinet']),
     'pillow': ('Gối', ['bed', 'cabinet']),
-    'footwear': ('Giày dép', ['floor', 'cabinet']),
-    'trash': ('Rác', []),
+    'footwear': ('Giày dép', ['shoe_area', 'cabinet']),
+    'trash': ('Rác', ['bin']),
     'handbag': ('Túi xách', ['cabinet']),
     'laptop': ('Máy tính (laptop)', ['desk', 'cabinet']),
     'book': ('Sách', ['desk', 'cabinet']),
@@ -17,10 +17,17 @@ CLASSES = {
     'chair': ('Ghế', ['floor']),
     'backpack': ('Balo', ['cabinet']),
 }
-ZONES = {'floor': 'Sàn', 'bed': 'Giường', 'desk': 'Bàn', 'cabinet': 'Tủ / kệ'}
+ZONES = {'floor': 'Sàn', 'bed': 'Giường', 'desk': 'Bàn', 'cabinet': 'Tủ / kệ', 'shoe_area': 'Khu để giày', 'bin': 'Thùng rác', 'walkway': 'Lối đi'}
 ALIASES = {'clothing': 'clothes', 'shoe': 'footwear', 'shoes': 'footwear', 'slipper': 'footwear',
            'slippers': 'footwear', 'garbage': 'trash', 'rubbish': 'trash', 'computer': 'laptop'}
 
+
+CLASS_PENALTIES = {'bag':4, 'clothes':6, 'blanket':4, 'pillow':3, 'footwear':6, 'trash':10,
+                   'handbag':4, 'laptop':6, 'book':3, 'bottle':4, 'chair':3, 'backpack':4}
+
+def canonical_class(name):
+    key = str(name).strip().casefold().replace(' ', '_').replace('-', '_')
+    return ALIASES.get(key, key)
 
 def validate_settings(zones, rules):
     if not isinstance(zones, list) or len(zones) > 40:
@@ -71,9 +78,9 @@ def score_placement(detections, image_shape, zones, rules):
     h,w = image_shape[:2]
     # Raster chuẩn hóa giữ chi phí tính diện tích có giới hạn; diện tích chỉ xấp xỉ.
     mask = np.zeros((512,512), np.uint8)
-    rows, wrong, evaluated = [], 0, 0
+    rows, wrong, evaluated, raw_penalty = [], 0, 0, 0
     for det in detections:
-        key = ALIASES.get(det['name'].lower(), det['name'].lower())
+        key = canonical_class(det['name'])
         x1,y1,x2,y2 = [float(v) for v in det['box']]
         x1,x2 = np.clip([x1/w,x2/w],0,1)
         y1,y2 = np.clip([y1/h,y2/h],0,1)
@@ -95,18 +102,22 @@ def score_placement(detections, image_shape, zones, rules):
                 reason = ('Đúng vùng được phép: ' if state=='correct' else 'Không được đặt tại: ') + ZONES[region]
                 if state == 'wrong':
                     wrong += 1
+                    raw_penalty += CLASS_PENALTIES[key]
                     left,top = np.floor(np.array([x1,y1])*512).astype(int)
                     right,bottom = np.ceil(np.array([x2,y2])*512).astype(int)
                     mask[top:bottom,left:right] = 1
         rows.append({**det, 'class_key':key, 'display_name':CLASSES.get(key,(det['name'],))[0],
                      'region':region, 'state':state, 'reason':reason,
+                     'position_penalty':CLASS_PENALTIES.get(key, 0) if state == 'wrong' else 0,
                      'area_ratio':float(max(0,x2-x1)*max(0,y2-y1))})
     area = float(mask.mean())
-    deductions = [min(60,wrong*6), min(40,area*200)]
+    deductions = [min(60,raw_penalty), min(40,area*200)]
     unknown = len(rows)-evaluated
     return dict(score=round(max(0,100-sum(deductions)),2) if evaluated else None,
                 detections=rows, evaluated=evaluated, unknown=unknown, wrong=wrong,
-                wrong_area_ratio=area, deductions=deductions,
+                wrong_area_ratio=area, deductions=deductions, raw_position_penalty=raw_penalty,
+                method='placement_v2', coverage=round(evaluated/len(rows),3) if rows else 0,
+                provisional=True,
                 note='Điểm thử nghiệm trên đồ vật nhận diện và đánh giá được; chưa xác nhận độ chính xác. ' +
                      ('Có đồ vật chưa đủ thông tin vị trí hoặc quy tắc. ' if unknown else '')+
                      'Không phát hiện đồ vật không chứng minh phòng gọn. Diện tích là diện tích khung bao trên ảnh.')

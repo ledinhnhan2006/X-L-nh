@@ -23,7 +23,7 @@ class PlacementTests(unittest.TestCase):
         one=self.score([detection()],[zone('floor')])
         two=self.score([detection(),detection()],[zone('floor')])
         self.assertEqual(one['wrong_area_ratio'],two['wrong_area_ratio'])
-        self.assertEqual(two['deductions'][0],12)
+        self.assertEqual(two['deductions'][0],6)
     def test_small_surface_overrides_floor(self):
         result=self.score([detection()],[zone('floor'),zone('desk',[[0,0],[.4,0],[.4,.4],[0,.4]])])
         self.assertEqual(result['score'],100)
@@ -41,5 +41,37 @@ class PlacementTests(unittest.TestCase):
         changed={**RULES,'book':['floor']}
         result=score_placement([detection()],(100,100,3),[zone('floor')],changed)
         self.assertEqual(result['score'],100)
+
+
+class WeightedScoreTests(unittest.TestCase):
+    def score(self, detections, kind):
+        return score_placement(detections,(100,100,3),[zone(kind)],RULES)
+
+    def test_class_severity_and_breakdown(self):
+        book=self.score([detection('book')],'floor')
+        trash=self.score([detection('trash')],'floor')
+        self.assertEqual(book['deductions'][0],3)
+        self.assertEqual(trash['deductions'][0],10)
+        self.assertLess(trash['score'],book['score'])
+        self.assertAlmostEqual(trash['score'],100-sum(trash['deductions']),delta=.01)
+        self.assertEqual(trash['detections'][0]['position_penalty'],10)
+
+    def test_trash_bin_and_shoe_storage(self):
+        self.assertEqual(self.score([detection('trash')],'bin')['score'],100)
+        self.assertEqual(self.score([detection('footwear')],'shoe_area')['score'],100)
+        self.assertLess(self.score([detection('footwear')],'floor')['score'],100)
+        self.assertLess(self.score([detection('chair')],'walkway')['score'],100)
+
+    def test_partial_coverage_and_class_normalization(self):
+        result=self.score([detection(' BOOK '),detection('unrecognized_class')],'desk')
+        self.assertEqual(result['evaluated'],1)
+        self.assertEqual(result['coverage'],.5)
+        self.assertTrue(result['provisional'])
+        self.assertEqual(result['detections'][1]['position_penalty'],0)
+
+    def test_penalty_caps(self):
+        result=self.score([detection('trash',[0,0,100,100]) for _ in range(12)],'floor')
+        self.assertEqual(result['deductions'],[60,40])
+        self.assertEqual(result['score'],0)
 
 if __name__=='__main__': unittest.main()

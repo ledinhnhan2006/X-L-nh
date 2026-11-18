@@ -14,13 +14,45 @@ import cv2
 import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
 from chamdiem import calculate_score
-from placement_score import score_placement, CLASSES, ZONES
+from placement_score import score_placement, CLASSES, ZONES, CLASS_PENALTIES, canonical_class
 
 OPEN_IMAGE = Image.open  # Giữ bộ đọc Pillow trước khi Ultralytics thay đổi Image.open.
 ROOT = Path(__file__).resolve().parent
 MODEL = None
+MODEL_FILE = None
 MODEL_LOCK = Lock()
 LABELS = ['Phòng bừa bộn', 'Phòng hơi bừa bộn', 'Phòng khá gọn', 'Phòng gọn gàng']
+
+
+def configured_model_path():
+    # Chỉ dùng mô hình được chọn; không tự rơi về YOLO nền khi weights.pt lỗi.
+    path = Path(os.environ.get('YOLO_MODEL_PATH') or (ROOT / 'weights.pt')).expanduser()
+    return path if path.is_absolute() else ROOT / path
+
+
+def load_model():
+    global MODEL, MODEL_FILE
+    path = configured_model_path()
+    if not path.is_file():
+        raise FileNotFoundError('Chưa có mô hình: chép weights.pt từ Roboflow vào cùng thư mục web_app.py rồi mở lại app.')
+    if MODEL is None or MODEL_FILE != path:
+        from ultralytics import YOLO
+        MODEL = YOLO(str(path))
+        MODEL_FILE = path
+    return MODEL
+
+
+def model_info():
+    try:
+        with MODEL_LOCK:
+            model = load_model()
+            classes = list(model.names.values())
+        known = {canonical_class(n) for n in classes}
+        return dict(ready=True, file=configured_model_path().name, classes=classes,
+                    missing_classes=[k for k in CLASSES if k not in known])
+    except Exception as exc:
+        return dict(ready=False, file=configured_model_path().name,
+                    error=f'{type(exc).__name__}: {str(exc)[:240]}')
 
 
 def image_url(image):
@@ -59,31 +91,45 @@ def analyze(data):
             raise ValueError('Hãy khoanh ít nhất một vùng trước khi chấm theo vị trí.')
         if not data.get('yolo'):
             raise ValueError('Chấm theo vị trí cần bật YOLO.')
+    confidence = data.get('confidence', .25)
+    if isinstance(confidence, bool) or not isinstance(confidence, (float, int)) or not .1 <= confidence <= .9:
+        raise ValueError('Ngưỡng tin cậy phải từ 0,10 đến 0,90.')
+    output['confidence_threshold'] = confidence
     if data.get('yolo', False):
         try:
-            global MODEL
             with MODEL_LOCK:
-                if MODEL is None:
-                    from ultralytics import YOLO
-                    model_path = Path(os.environ.get('YOLO_MODEL_PATH', str(ROOT / 'yolo11n.pt'))).expanduser()
-                    if not model_path.is_file():
-                        raise FileNotFoundError('Không tìm thấy mô hình YOLO đã cấu hình.')
-                    MODEL = YOLO(str(model_path))
-                prediction = MODEL.predict(image, device='cpu', conf=.25, verbose=False)[0]
+                model = load_model()
+                prediction = model.predict(image, device='cpu', conf=confidence, verbose=False)[0]
+                output['model_file'] = configured_model_path().name
                 output['yolo_image'] = image_url(prediction.plot())
                 output['detections'] = [dict(name=MODEL.names[int(box.cls.item())],
                     confidence=float(box.conf.item()), box=box.xyxy[0].tolist()) for box in prediction.boxes]
-        except Exception:
-            output['yolo_error'] = 'Không chạy được YOLO. Kiểm tra thư viện ultralytics và tệp yolo11n.pt. Điểm OpenCV vẫn có kết quả.'
+        except Exception as exc:
+            output['yolo_error'] = f'Không nạp/chạy được mô hình {configured_model_path().name}: {type(exc).__name__}: {str(exc)[:240]}. Kiểm tra weights.pt và phiên bản ultralytics; không dùng mô hình nền thay thế.'
     if placement:
         if output['yolo_error']:
             output['score'] = None
             output['label'] = 'Không chấm được: YOLO gặp lỗi'
         else:
             output['placement'] = score_placement(output['detections'], image.shape, data['zones'], data['rules'])
+            audit = image.copy()
+            colors = {'correct':(55,170,55), 'wrong':(30,30,220), 'unknown':(0,170,230)}
+            for zone in data['zones']:
+                polygon = (np.array(zone['points']) * [image.shape[1]-1,image.shape[0]-1]).astype(np.int32)
+                cv2.polylines(audit,[polygon],True,(180,130,70),2)
+            for i, item in enumerate(output['placement']['detections'],1):
+                x1,y1,x2,y2 = map(int,item['box'])
+                color = colors[item['state']]
+                cv2.rectangle(audit,(x1,y1),(x2,y2),color,2)
+                cv2.circle(audit,((x1+x2)//2,y2),4,color,-1)
+                text = f"#{i} {item['name']} {item['state']} -{item['position_penalty']}"
+                cv2.putText(audit,text,(max(0,x1),max(16,y1-5)),cv2.FONT_HERSHEY_SIMPLEX,.45,color,1,cv2.LINE_AA)
+            output['yolo_image'] = image_url(audit)
             output['score'] = output['placement']['score']
             value = output['score']
             output['label'] = ('Chưa đủ dữ liệu để chấm' if value is None else LABELS[3 if value >= 80 else 2 if value >= 60 else 1 if value >= 40 else 0])
+    if placement and output.get('placement', {}).get('unknown', 0) and output['score'] is not None:
+        output['label'] = 'Điểm tạm tính trên phần đã đánh giá'
     output['scoring_mode'] = 'placement' if placement else 'opencv'
     if MODEL is not None:
         output['model_classes'] = list(MODEL.names.values())
@@ -103,8 +149,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/':
             self.send(200, (ROOT / 'web' / 'index.html').read_bytes(), 'text/html; charset=utf-8')
+        elif self.path == '/model':
+            self.send(200, model_info())
         elif self.path == '/settings':
-            self.send(200, {'classes': {k:{'label':v[0], 'allowed':v[1]} for k,v in CLASSES.items()}, 'zones':ZONES})
+            self.send(200, {'classes': {k:{'label':v[0], 'allowed':v[1], 'penalty':CLASS_PENALTIES[k]} for k,v in CLASSES.items()}, 'zones':ZONES})
         elif self.path == '/placement.js':
             self.send(200, (ROOT / 'web' / 'placement.js').read_bytes(), 'text/javascript; charset=utf-8')
         elif self.path == '/health':
