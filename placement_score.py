@@ -22,8 +22,16 @@ ALIASES = {'clothing': 'clothes', 'shoe': 'footwear', 'shoes': 'footwear', 'slip
            'slippers': 'footwear', 'garbage': 'trash', 'rubbish': 'trash', 'computer': 'laptop'}
 
 
-CLASS_PENALTIES = {'bag':4, 'clothes':6, 'blanket':4, 'pillow':3, 'footwear':6, 'trash':10,
-                   'handbag':4, 'laptop':6, 'book':3, 'bottle':4, 'chair':3, 'backpack':4}
+# Thang điểm nhẹ: giới hạn tác động của số vật và khung bao lớn.
+BASE_SCORE = 100
+MIN_SCORE = 40
+CLASS_CAP = 8
+POSITION_CAP = 45
+AREA_CAP = 15
+AREA_ALLOWANCE = .10
+ASSESSMENT_CONFIDENCE = .50
+CLASS_PENALTIES = {'bag':1, 'clothes':1.5, 'blanket':1, 'pillow':.5, 'footwear':1.5, 'trash':3,
+                   'handbag':1, 'laptop':1.5, 'book':.5, 'bottle':1, 'chair':.5, 'backpack':1}
 
 def canonical_class(name):
     key = str(name).strip().casefold().replace(' ', '_').replace('-', '_')
@@ -79,6 +87,7 @@ def score_placement(detections, image_shape, zones, rules):
     # Raster chuẩn hóa giữ chi phí tính diện tích có giới hạn; diện tích chỉ xấp xỉ.
     mask = np.zeros((512,512), np.uint8)
     rows, wrong, evaluated, raw_penalty = [], 0, 0, 0
+    class_penalties = {}
     for det in detections:
         key = canonical_class(det['name'])
         x1,y1,x2,y2 = [float(v) for v in det['box']]
@@ -91,8 +100,11 @@ def score_placement(detections, image_shape, zones, rules):
         region = matches[0][1] if matches else None
         ambiguous = len(matches)>1 and abs(matches[0][0]-matches[1][0])<1e-6 and matches[0][1]!=matches[1][1]
         state, reason = 'unknown', 'Chưa có quy tắc cho lớp này.'
+        row_penalty = 0
         if key in CLASSES:
-            if ambiguous:
+            if det.get('confidence', 0) < ASSESSMENT_CONFIDENCE:
+                reason = 'Độ tin cậy dưới 50%; cần kiểm tra, không trừ điểm.'
+            elif ambiguous:
                 reason = 'Hai vùng cùng diện tích chồng lấp; cần khoanh lại.'
             elif region is None:
                 reason = 'Điểm giữa đáy khung bao nằm ngoài các vùng đã khoanh.'
@@ -103,21 +115,26 @@ def score_placement(detections, image_shape, zones, rules):
                 if state == 'wrong':
                     wrong += 1
                     raw_penalty += CLASS_PENALTIES[key]
+                    row_penalty = min(CLASS_PENALTIES[key], max(0, CLASS_CAP-class_penalties.get(key,0)))
+                    class_penalties[key] = class_penalties.get(key,0) + row_penalty
                     left,top = np.floor(np.array([x1,y1])*512).astype(int)
                     right,bottom = np.ceil(np.array([x2,y2])*512).astype(int)
                     mask[top:bottom,left:right] = 1
         rows.append({**det, 'class_key':key, 'display_name':CLASSES.get(key,(det['name'],))[0],
                      'region':region, 'state':state, 'reason':reason,
-                     'position_penalty':CLASS_PENALTIES.get(key, 0) if state == 'wrong' else 0,
+                     'position_penalty':row_penalty,
+                     'base_position_penalty':CLASS_PENALTIES.get(key, 0) if state == 'wrong' else 0,
                      'area_ratio':float(max(0,x2-x1)*max(0,y2-y1))})
     area = float(mask.mean())
-    deductions = [min(60,raw_penalty), min(40,area*200)]
+    deductions = [min(POSITION_CAP,sum(class_penalties.values())), min(AREA_CAP,max(0,area-AREA_ALLOWANCE)*30)]
     unknown = len(rows)-evaluated
-    return dict(score=round(max(0,100-sum(deductions)),2) if evaluated else None,
+    return dict(score=round(max(MIN_SCORE,BASE_SCORE-sum(deductions)),2) if evaluated else None,
                 detections=rows, evaluated=evaluated, unknown=unknown, wrong=wrong,
                 wrong_area_ratio=area, deductions=deductions, raw_position_penalty=raw_penalty,
-                method='placement_v2', coverage=round(evaluated/len(rows),3) if rows else 0,
+                method='placement_v3_gentle', baseline=BASE_SCORE, minimum_score=MIN_SCORE,
+                class_penalties=class_penalties, class_cap=CLASS_CAP,
+                area_allowance=AREA_ALLOWANCE, assessment_confidence=ASSESSMENT_CONFIDENCE, coverage=round(evaluated/len(rows),3) if rows else 0,
                 provisional=True,
-                note='Điểm thử nghiệm trên đồ vật nhận diện và đánh giá được; chưa xác nhận độ chính xác. ' +
+                note='Thang điểm nhẹ: nền 100, sàn 40; tối đa 8 điểm mỗi loại, miễn 10% diện tích sai chỗ. Chỉ đánh giá phát hiện tin cậy từ 50%. Điểm thử nghiệm trên đồ vật nhận diện và đánh giá được; chưa xác nhận độ chính xác. ' +
                      ('Có đồ vật chưa đủ thông tin vị trí hoặc quy tắc. ' if unknown else '')+
                      'Không phát hiện đồ vật không chứng minh phòng gọn. Diện tích là diện tích khung bao trên ảnh.')

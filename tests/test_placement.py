@@ -23,7 +23,7 @@ class PlacementTests(unittest.TestCase):
         one=self.score([detection()],[zone('floor')])
         two=self.score([detection(),detection()],[zone('floor')])
         self.assertEqual(one['wrong_area_ratio'],two['wrong_area_ratio'])
-        self.assertEqual(two['deductions'][0],6)
+        self.assertEqual(two['deductions'][0],1)
     def test_small_surface_overrides_floor(self):
         result=self.score([detection()],[zone('floor'),zone('desk',[[0,0],[.4,0],[.4,.4],[0,.4]])])
         self.assertEqual(result['score'],100)
@@ -50,11 +50,11 @@ class WeightedScoreTests(unittest.TestCase):
     def test_class_severity_and_breakdown(self):
         book=self.score([detection('book')],'floor')
         trash=self.score([detection('trash')],'floor')
-        self.assertEqual(book['deductions'][0],3)
-        self.assertEqual(trash['deductions'][0],10)
+        self.assertEqual(book['deductions'][0],.5)
+        self.assertEqual(trash['deductions'][0],3)
         self.assertLess(trash['score'],book['score'])
         self.assertAlmostEqual(trash['score'],100-sum(trash['deductions']),delta=.01)
-        self.assertEqual(trash['detections'][0]['position_penalty'],10)
+        self.assertEqual(trash['detections'][0]['position_penalty'],3)
 
     def test_trash_bin_and_shoe_storage(self):
         self.assertEqual(self.score([detection('trash')],'bin')['score'],100)
@@ -71,7 +71,39 @@ class WeightedScoreTests(unittest.TestCase):
 
     def test_penalty_caps(self):
         result=self.score([detection('trash',[0,0,100,100]) for _ in range(12)],'floor')
-        self.assertEqual(result['deductions'],[60,40])
-        self.assertEqual(result['score'],0)
+        self.assertEqual(result['deductions'],[8,15])
+        self.assertEqual(result['score'],77)
+
+class GentleScoreTests(unittest.TestCase):
+    def test_small_violation_keeps_base_score(self):
+        result=score_placement([detection('book')],(100,100,3),[zone('floor')],RULES)
+        self.assertEqual(result['score'],99.5)
+        self.assertEqual(result['deductions'],[.5,0])
+
+    def test_low_confidence_not_penalized_or_called_clean(self):
+        weak={**detection('trash'), 'confidence':.49}
+        result=score_placement([weak],(100,100,3),[zone('floor')],RULES)
+        self.assertIsNone(result['score'])
+        self.assertEqual(result['unknown'],1)
+        self.assertEqual(result['deductions'],[0,0])
+        self.assertEqual(result['wrong_area_ratio'],0)
+        mixed=score_placement([weak,detection('book')],(100,100,3),[zone('desk')],RULES)
+        self.assertEqual(mixed['score'],100)
+        self.assertEqual(mixed['coverage'],.5)
+
+    def test_floor_and_caps_for_many_types(self):
+        rules={name:[] for name in CLASSES}
+        objects=[detection(name,[0,0,100,100]) for name in CLASSES for _ in range(20)]
+        result=score_placement(objects,(100,100,3),[zone('floor')],rules)
+        self.assertEqual(result['deductions'],[45,15])
+        self.assertEqual(result['score'],40)
+        self.assertTrue(all(v<=8 for v in result['class_penalties'].values()))
+
+    def test_area_allowance_and_excess(self):
+        small=score_placement([detection('trash',[0,0,20,20])],(100,100,3),[zone('floor')],RULES)
+        large=score_placement([detection('trash',[0,0,50,50])],(100,100,3),[zone('floor')],RULES)
+        self.assertEqual(small['deductions'][1],0)
+        self.assertAlmostEqual(large['deductions'][1],4.5)
+        self.assertEqual(large['score'],92.5)
 
 if __name__=='__main__': unittest.main()

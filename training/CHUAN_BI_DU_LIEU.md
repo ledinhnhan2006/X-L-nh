@@ -75,4 +75,4 @@ Dùng đường dẫn best.pt thực tế được in ra sau khi train. Không c
 
 Dùng điểm giữa đáy khung bao để ước lượng vật đang ở trên vùng nào; nếu nhiều vùng chứa điểm đó thì ưu tiên vùng nhỏ hơn. Đây không phải suy luận 3D và có thể gán nhầm ở ảnh chụp xiên.
 
-Điểm thử nghiệm = 100 − min(60, số vật sai × 6) − min(40, diện tích hợp các khung sai / diện tích ảnh × 200). Diện tích hợp được xấp xỉ trên lưới 512×512 để tránh đếm đôi phần chồng lấp. Đồ vật chưa có quy tắc hoặc nằm ngoài vùng đã khoanh không được tính là đúng. Không có đồ vật đánh giá được thì không trả điểm. Chỉ chấm trên các đồ vật phát hiện được, nên 100 không chứng minh toàn bộ phòng gọn. Các mức phạt cần hiệu chỉnh với đánh giá thực tế từ con người; chưa phải thang đo đã được kiểm chứng.
+Công thức chấm điểm hiện hành đã chuyển sang thang nhẹ v3: điểm nền 100, sàn 40, phạt vị trí tối đa 8 điểm/loại và 45 điểm tổng; diện tích được miễn 10% đầu, tối đa 15 điểm. Chỉ đánh giá phát hiện tin cậy từ 50%. Xem PHUONG_PHAP_CHAM_DIEM.md ở thư mục gốc để biết đầy đủ.

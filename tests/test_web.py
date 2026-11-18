@@ -58,7 +58,7 @@ class WebTests(unittest.TestCase):
         forbidden=self.request(payload)
         self.assertGreater(forbidden['placement']['wrong'],0)
         self.assertLess(forbidden['score'],result['score'])
-        self.assertEqual(forbidden['placement']['method'],'placement_v2')
+        self.assertEqual(forbidden['placement']['method'],'placement_v3_gentle')
         payload['zones']=[]
         with self.assertRaises(urllib.error.HTTPError) as caught:
             self.request(payload)

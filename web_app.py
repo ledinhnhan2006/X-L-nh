@@ -127,7 +127,7 @@ def analyze(data):
             output['yolo_image'] = image_url(audit)
             output['score'] = output['placement']['score']
             value = output['score']
-            output['label'] = ('Chưa đủ dữ liệu để chấm' if value is None else LABELS[3 if value >= 80 else 2 if value >= 60 else 1 if value >= 40 else 0])
+            output['label'] = ('Chưa đủ dữ liệu để chấm' if value is None else LABELS[3 if value >= 90 else 2 if value >= 75 else 1 if value >= 55 else 0])
     if placement and output.get('placement', {}).get('unknown', 0) and output['score'] is not None:
         output['label'] = 'Điểm tạm tính trên phần đã đánh giá'
     output['scoring_mode'] = 'placement' if placement else 'opencv'

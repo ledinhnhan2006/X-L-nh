@@ -1,4 +1,4 @@
-# Phương pháp chấm ảnh YOLO v2
+# Phương pháp chấm ảnh YOLO v3 — thang điểm nhẹ
 
 ## Mở app với mô hình đã huấn luyện của bạn
 
@@ -28,44 +28,53 @@ Vị trí xấp xỉ là điểm giữa đáy khung: `((x1+x2)/2, y2)`. Nếu nh
 
 Tập tên lớp chuẩn: bag, clothes, blanket, pillow, footwear, trash, handbag, laptop, book, bottle, chair, backpack. Chuẩn hóa chữ hoa/thường và nhận một số tên tương đương như shoes → footwear. Những tên khác cần đổi trong nhãn hoặc bổ sung ánh xạ; không tự đoán lớp.
 
-## 2. Phạt theo loại vật sai chỗ: P
+## 2. Điểm nền và điều kiện được trừ
 
-Mỗi vật đúng chỗ: 0 điểm phạt. Mỗi vật sai chỗ cộng mức sau:
+Điểm khởi đầu là **100**, điểm sàn là **40**. Đây là quy ước để giảm trừ quá mức, không phải độ chính xác YOLO hay thang đo đã được chứng minh khoa học.
 
-| Loại vật | Điểm phạt vị trí / vật |
+Chỉ đánh giá vị trí khi độ tin cậy của phát hiện **từ 0,50 trở lên**. Dự đoán dưới 0,50 vẫn có thể xuất hiện nếu đạt ngưỡng hiển thị (mặc định 0,25), nhưng ghi là chưa đủ thông tin và không trừ điểm vị trí hoặc diện tích. Lớp lạ, ngoài vùng đã khoanh và vùng mơ hồ cũng không bị phạt.
+
+Không phát hiện/không đánh giá được vật nào → **không trả điểm**, thay vì tự thưởng 100 hay điểm sàn 40.
+
+## 3. Phạt vị trí nhẹ, có giới hạn theo loại
+
+| Loại vật sai vị trí | Điểm phạt / vật |
 |---|---:|
-| Rác | 10 |
-| Quần áo, giày dép, laptop | 6 |
-| Túi đựng đồ, chăn, túi xách, chai, balo | 4 |
-| Gối, sách, ghế | 3 |
+| Rác | 3 |
+| Quần áo, giày dép, laptop | 1,5 |
+| Túi đựng đồ, chăn, túi xách, chai, balo | 1 |
+| Gối, sách, ghế | 0,5 |
 
-`P = min(60, tổng mức phạt các vật sai chỗ)`.
+Mỗi loại chỉ bị trừ tối đa **8 điểm**, bất kể có bao nhiêu phát hiện. Tổng phạt vị trí P tối đa **45 điểm**:
 
-Các mức là quy ước thử nghiệm của app, không phải kết quả YOLO học được, không phải chuẩn vệ sinh. Bảng giải thích hiển thị mức phạt từng vật **trước khi áp dụng giới hạn tổng 60**. Rác được ưu tiên cao hơn sách do mục tiêu bố trí/vệ sinh của dự án. Chưa có bộ đánh giá con người để xác nhận các hệ số này.
+`P = min(45, tổng theo loại[min(8, tổng phạt các vật sai thuộc loại đó)])`.
 
-## 3. Phạt diện tích sai chỗ: A
+Bảng từng vật hiển thị khoản trừ sau giới hạn loại, trước giới hạn tổng 45. Nếu loại đó đã đủ 8 điểm, vật tiếp theo cùng loại vẫn được đánh dấu sai nhưng không bị trừ vị trí thêm. Đây là cách hạn chế đếm nhiều vật nhỏ hoặc dự đoán lặp làm điểm giảm quá nhanh.
 
-Tạo vùng hợp của tất cả khung bao đồ vật sai chỗ. Phần chồng lấp chỉ đếm một lần. Diện tích được xấp xỉ trên lưới chuẩn hóa 512×512 để giới hạn tài nguyên.
+## 4. Diện tích chỉ trừ phần cần thiết
+
+Tính diện tích hợp các khung bao của vật sai chỗ **đủ tin cậy**. Phần chồng lấp chỉ tính một lần, xấp xỉ bằng lưới 512×512.
 
 `r = diện tích hợp các khung sai / diện tích ảnh`.
 
-`A = min(40, 200 × r)`.
+Miễn **10% diện tích đầu tiên** để giảm tác động của khung bao có nền. Chỉ trừ phần vượt 10%, tối đa 15 điểm:
 
-Ví dụ các khung sai chiếm khoảng 5% ảnh thì bị trừ khoảng 10 điểm diện tích. Chiếm từ 20% ảnh trở lên bị trừ tối đa 40 điểm. Khung bao không phải mặt nạ đồ vật hay diện tích sàn thực; khoảng cách camera và góc chụp ảnh hưởng r.
+`A = min(15, 30 × max(0, r − 0,10))`.
 
-## 4. Tổng điểm và trường hợp không đủ thông tin
+Ví dụ: r=5% → không trừ diện tích; r=25% → trừ 4,5 điểm; r=60% trở lên → tối đa 15 điểm. Không phải diện tích vật thật hoặc diện tích sàn, nên góc chụp vẫn ảnh hưởng.
 
-`S = max(0, 100 − P − A)`, làm tròn 2 chữ số.
+## 5. Công thức tổng và diễn giải
 
-Ví dụ một vật rác sai chỗ (10), một áo sai chỗ (6), tổng khung sai chiếm khoảng 5% ảnh (10) → khoảng 74/100.
+`S = max(40, 100 − P − A)`, làm tròn 2 chữ số.
 
-- Từ 80: gọn gàng; từ 60: khá gọn; từ 40: hơi bừa bộn; dưới 40: bừa bộn. Đây cũng là ngưỡng quy ước thử nghiệm.
-- Không có vật nào đánh giá được → không trả điểm (hiển thị dấu —).
-- Có vật chưa rõ lớp/vị trí → ghi **điểm tạm tính trên phần đã đánh giá**, hiển thị số đánh giá được và số chưa đủ thông tin; không coi phần chưa biết là đúng chỗ.
-- Có lớp mục tiêu thiếu trong mô hình → cảnh báo. Dù đủ tên lớp, mô hình vẫn có thể bỏ sót vật thể; không nhìn thấy một vật không đồng nghĩa vật đó không có trong ảnh.
-- 100 chỉ nghĩa không có vi phạm trong các phát hiện đã đánh giá được. Không chứng minh cả phòng gọn.
-- Độ tin cậy YOLO dùng để lọc phát hiện, không nhân thành điểm gọn gàng và không được hiểu là xác suất đúng đã hiệu chuẩn.
+Ví dụ: một vật rác sai chỗ (3), một áo sai chỗ (1,5), khung sai chiếm 15% ảnh (phạt diện tích 1,5) → **94/100**. Đây là thang nhẹ theo lựa chọn thiết kế, không phải kết luận phòng sạch.
+
+Nhiều vật sai chỉ thuộc một loại: phạt vị trí tối đa 8 + diện tích tối đa 15 → điểm không thấp hơn 77. Nhiều loại sai dày đặc: tổng phạt tối đa 45+15 → điểm sàn 40. Điểm sàn không có nghĩa mọi ảnh đều đạt mức gọn gàng.
+
+Nhãn ở chế độ YOLO: từ 90 gọn gàng; từ 75 khá gọn; từ 55 hơi bừa bộn; dưới 55 bừa bộn. Chế độ OpenCV giữ thang cũ riêng.
+
+Nếu có phát hiện chưa đủ thông tin, kết quả ghi **điểm tạm tính trên phần đã đánh giá**. Có lớp mục tiêu thiếu trong mô hình thì cảnh báo. Kể cả đủ tên lớp, mô hình có thể bỏ sót đồ vật; 100 chỉ nghĩa chưa có khoản trừ trong phần quan sát được, không xác nhận cả phòng gọn.
 
 ## Đã và chưa xác minh
 
-Kiểm tra công thức, giới hạn điểm, mức phạt từng lớp, vùng chồng nhau, thiếu thông tin, thiếu checkpoint, API và thao tác giao diện. Đã kiểm tra với weights.pt thực tế bạn cung cấp: nạp mô hình, đọc 11 lớp, suy luận trên ảnh mẫu, chấm theo vùng và quy tắc, tải ảnh/báo cáo. Việc suy luận thành công không chứng minh độ chính xác trên ảnh mới; chưa có bộ ảnh gán nhãn độc lập để đánh giá precision/recall/mAP của checkpoint này. Chưa có đánh giá độc lập chứng minh điểm v2 chính xác hơn theo cảm nhận con người.
+Kiểm tra công thức, giới hạn điểm, mức phạt từng lớp, vùng chồng nhau, thiếu thông tin, thiếu checkpoint, API và thao tác giao diện. Đã kiểm tra với weights.pt thực tế bạn cung cấp: nạp mô hình, đọc 11 lớp, suy luận trên ảnh mẫu, chấm theo vùng và quy tắc, tải ảnh/báo cáo. Việc suy luận thành công không chứng minh độ chính xác trên ảnh mới; chưa có bộ ảnh gán nhãn độc lập để đánh giá precision/recall/mAP của checkpoint này. Chưa có đánh giá độc lập chứng minh điểm v3 chính xác hơn theo cảm nhận con người.
