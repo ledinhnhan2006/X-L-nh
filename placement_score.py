@@ -6,7 +6,7 @@ import numpy as np
 CLASSES = {
     'bag': ('Túi (túi đựng đồ)', ['cabinet']),
     'clothes': ('Quần áo', ['cabinet']),
-    'blanket': ('Chăn', ['bed', 'cabinet']),
+    'blanket': ('Chăn', ['bed']),
     'pillow': ('Gối', ['bed', 'cabinet']),
     'footwear': ('Giày dép', ['shoe_area', 'cabinet']),
     'trash': ('Rác', ['bin']),

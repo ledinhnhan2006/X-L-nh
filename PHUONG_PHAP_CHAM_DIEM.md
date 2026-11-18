@@ -16,7 +16,7 @@
 1. Chọn JPG/PNG/WebP/BMP hoặc kéo thả ảnh; tối đa 14 MB và 25 triệu pixel.
 2. Giữ chế độ **YOLO — vị trí và diện tích** (mặc định).
 3. Khoanh các vùng trên chính ảnh này: sàn, giường, bàn, tủ/kệ. Có thể thêm khu để giày, thùng rác, lối đi. Chọn loại vùng, bấm các đỉnh theo thứ tự quanh vùng, bấm Lưu vùng. Mỗi ảnh mới cần khoanh lại.
-4. Mở bảng quy tắc để chọn nơi được đặt cho từng lớp. Mặc định giày ở khu giày/tủ, rác trong thùng rác; lối đi không được chọn cho lớp nào. Người dùng có thể sửa các nơi được phép.
+4. Mở bảng quy tắc để chọn nơi được đặt cho từng lớp. Mặc định giày ở khu giày/tủ, rác trong thùng rác; lối đi không được chọn cho lớp nào. Chăn (blanket) mặc định chỉ được đặt trên giường; đặt tại tủ, sàn hoặc nơi khác sẽ bị coi là sai chỗ nếu đủ độ tin cậy. Người dùng có thể sửa các nơi được phép.
 5. Chọn ngưỡng tin cậy (mặc định 0,25), nhấn Chấm điểm ảnh. Hạ ngưỡng có thể tăng phát hiện lẫn nhận nhầm; không phải biện pháp nâng độ chính xác chắc chắn.
 6. Xem kết quả và tải ảnh/báo cáo JSON. Khung xanh: đúng chỗ, đỏ: sai chỗ, vàng: chưa đánh giá được. Số # trên khung khớp số trong giải thích. Chấm đúng hay sai dựa vào dự đoán, không xác nhận đồ vật trong ảnh thực sự đúng nhãn.
 
