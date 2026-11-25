@@ -14,3 +14,6 @@ dataset/
 training/starter100/data-local.yaml
 
 *.cache
+
+# Ảnh bộ segmentation đã gói trong ZIP, tránh nhân đôi khi tải app
+training/segmentation_v1/images/

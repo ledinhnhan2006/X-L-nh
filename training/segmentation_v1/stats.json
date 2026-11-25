@@ -1,0 +1,66 @@
+{
+  "image_count": 130,
+  "old_room_images": 100,
+  "new_images": 30,
+  "roboflow_43_included": false,
+  "reviewed_images": 0,
+  "ready_to_train_12_classes": false,
+  "skipped_automatic_masks": 0,
+  "classes": {
+    "bag": {
+      "source_polygons": 0,
+      "automatic_draft_polygons": 13
+    },
+    "clothes": {
+      "source_polygons": 0,
+      "automatic_draft_polygons": 28
+    },
+    "blanket": {
+      "source_polygons": 0,
+      "automatic_draft_polygons": 46
+    },
+    "pillow": {
+      "source_polygons": 0,
+      "automatic_draft_polygons": 70
+    },
+    "footwear": {
+      "source_polygons": 0,
+      "automatic_draft_polygons": 5
+    },
+    "trash": {
+      "source_polygons": 0,
+      "automatic_draft_polygons": 0
+    },
+    "handbag": {
+      "source_polygons": 10,
+      "automatic_draft_polygons": 0
+    },
+    "laptop": {
+      "source_polygons": 22,
+      "automatic_draft_polygons": 0
+    },
+    "book": {
+      "source_polygons": 392,
+      "automatic_draft_polygons": 0
+    },
+    "bottle": {
+      "source_polygons": 28,
+      "automatic_draft_polygons": 0
+    },
+    "chair": {
+      "source_polygons": 174,
+      "automatic_draft_polygons": 0
+    },
+    "backpack": {
+      "source_polygons": 5,
+      "automatic_draft_polygons": 0
+    }
+  },
+  "segmentation_archive_sha256": "039d39b6548fa9dbcc1bb84e722953d25ebc04935772805e5d5c7badefcb349b",
+  "detector_sha256": "ac4c4b0ad994344b308a71728d275bcbbd2af8acdc082ecb04774613f3084c1a",
+  "sam_sha256": "3c1e81ca9b037dd39d70a014ddb9a813d6c4c4e12555420db7eaff31689bd4e3",
+  "rejected_drafts": 11,
+  "object_annotations": 793,
+  "polygon_count": 802,
+  "images_without_suggested_annotations": 7
+}

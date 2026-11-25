@@ -1,0 +1,13 @@
+{
+  "160": "Visual check: cat on bed, not loose clothing.",
+  "197": "Visual check: trousers being worn; excluded by this project's clothes definition.",
+  "333": "Visual check: clothing being worn, not a loose clothing item.",
+  "334": "Visual check: clothing being worn, not a loose clothing item.",
+  "576": "Visual check: cat on floor, not clothing.",
+  "585": "Visual check: cat on sofa, not clothing.",
+  "586": "Visual check: laptop keyboard, not footwear.",
+  "667": "Visual check: shirt being worn, not a blanket.",
+  "668": "Visual check: shirt being worn, not a blanket.",
+  "669": "Visual check: shirt being worn, not a blanket.",
+  "702": "Visual check: person's lap/legs, not a pillow."
+}

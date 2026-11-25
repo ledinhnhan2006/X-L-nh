@@ -1,0 +1,12 @@
+bag
+clothes
+blanket
+pillow
+footwear
+trash
+handbag
+laptop
+book
+bottle
+chair
+backpack
