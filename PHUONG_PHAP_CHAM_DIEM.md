@@ -1,4 +1,4 @@
-# Phương pháp chấm ảnh YOLO v3 — thang điểm nhẹ
+# Phương pháp chấm ảnh YOLO v4 — diện tích contour, thang điểm nhẹ
 
 ## Mở app với mô hình đã huấn luyện của bạn
 
@@ -18,7 +18,7 @@
 3. Khoanh các vùng trên chính ảnh này: sàn, giường, bàn, tủ/kệ. Có thể thêm khu để giày, thùng rác, lối đi. Chọn loại vùng, bấm các đỉnh theo thứ tự quanh vùng, bấm Lưu vùng. Mỗi ảnh mới cần khoanh lại.
 4. Mở bảng quy tắc để chọn nơi được đặt cho từng lớp. Mặc định giày ở khu giày/tủ, rác trong thùng rác; lối đi không được chọn cho lớp nào. Chăn (blanket) mặc định chỉ được đặt trên giường; đặt tại tủ, sàn hoặc nơi khác sẽ bị coi là sai chỗ nếu đủ độ tin cậy. Người dùng có thể sửa các nơi được phép.
 5. Chọn ngưỡng tin cậy (mặc định 0,25), nhấn Chấm điểm ảnh. Hạ ngưỡng có thể tăng phát hiện lẫn nhận nhầm; không phải biện pháp nâng độ chính xác chắc chắn.
-6. Xem kết quả và tải ảnh/báo cáo JSON. Khung xanh: đúng chỗ, đỏ: sai chỗ, vàng: chưa đánh giá được. Số # trên khung khớp số trong giải thích. Chấm đúng hay sai dựa vào dự đoán, không xác nhận đồ vật trong ảnh thực sự đúng nhãn.
+6. Xem kết quả và tải ảnh/báo cáo JSON. Contour xanh: đúng chỗ, đỏ: sai chỗ; điểm neo/nhãn vàng: chưa đánh giá được. Nếu tách được contour thì app vẽ đường bao. Số # trên ảnh khớp số trong giải thích. Chấm đúng hay sai dựa vào dự đoán, không xác nhận đồ vật trong ảnh thực sự đúng nhãn.
 
 ## 1. Nhận diện và xác định vị trí
 
@@ -51,23 +51,31 @@ Mỗi loại chỉ bị trừ tối đa **8 điểm**, bất kể có bao nhiêu
 
 Bảng từng vật hiển thị khoản trừ sau giới hạn loại, trước giới hạn tổng 45. Nếu loại đó đã đủ 8 điểm, vật tiếp theo cùng loại vẫn được đánh dấu sai nhưng không bị trừ vị trí thêm. Đây là cách hạn chế đếm nhiều vật nhỏ hoặc dự đoán lặp làm điểm giảm quá nhanh.
 
-## 4. Diện tích chỉ trừ phần cần thiết
+## 4. Diện tích đo bằng contour, không lấy khung chữ nhật
 
-Tính diện tích hợp các khung bao của vật sai chỗ **đủ tin cậy**. Phần chồng lấp chỉ tính một lần, xấp xỉ bằng lưới 512×512.
+YOLO chỉ cung cấp vùng tìm kiếm và tên đồ vật. App lấy ROI có thêm nền quanh box, giảm kích thước ROI về tối đa 320 pixel cạnh dài, Gaussian blur màu. Ảnh xám và Canny được tính cho thông tin cạnh; Canny không tự được coi là mặt nạ vật thể.
 
-`r = diện tích hợp các khung sai / diện tích ảnh`.
+GrabCut 3 vòng dùng màu ảnh, đánh dấu nền ngoài box và vùng có thể là vật bên trong box để tạo mặt nạ nhị phân. App loại các mảnh nhiễu rất nhỏ, dùng `findContours(RETR_TREE, CHAIN_APPROX_SIMPLE)` để lấy đường bao và lỗ bên trong. Diện tích từng vật = tổng `cv2.contourArea` của đường bao ngoài, trừ diện tích các lỗ, quy đổi về tọa độ ảnh gốc sau khi resize ROI.
 
-Miễn **10% diện tích đầu tiên** để giảm tác động của khung bao có nền. Chỉ trừ phần vượt 10%, tối đa 15 điểm:
+`area_ratio = diện tích contour / diện tích ảnh gốc`.
+
+Phần phạt diện tích lấy **hợp các mặt nạ contour** của vật sai chỗ đủ tin cậy trên lưới 512×512. App tìm contour của vùng hợp và tính diện tích bằng contourArea; không cộng trùng phần giao nhau và không để lỗ của vật này xóa mất vật khác nằm trong lỗ đó.
+
+`r = diện tích hợp các contour sai / diện tích ảnh`.
+
+Giữ mức trừ nhẹ như trước:
 
 `A = min(15, 30 × max(0, r − 0,10))`.
 
-Ví dụ: r=5% → không trừ diện tích; r=25% → trừ 4,5 điểm; r=60% trở lên → tối đa 15 điểm. Không phải diện tích vật thật hoặc diện tích sàn, nên góc chụp vẫn ảnh hưởng.
+Nếu vật quá nhỏ, khung bao trùm toàn ảnh không có nền, ảnh đồng màu, GrabCut thất bại hoặc mặt nạ gần phủ nguyên box, app ghi **diện tích chưa đủ thông tin**, để area_ratio/area_pixels là null và không tính diện tích phần đó. Không dùng box để thay thế, không ghi là đo được diện tích 0. Phạt vị trí vẫn được tính nếu đủ điều kiện; kết quả ghi điểm tạm tính nếu còn vật sai chỗ chưa đo được diện tích.
+
+GrabCut không được huấn luyện để hiểu từng lớp, nên có thể lấy nhầm nền hoặc đồ khác trong ROI. Contour chỉ là ước lượng cần kiểm tra, đặc biệt với chăn nhiều họa tiết, vật bị che và vật có màu gần nền. Các tiêu chí loại bỏ trên không chứng minh một contour còn lại là đúng vật. Đây không phải instance segmentation được huấn luyện; không cần train lại weights.pt để chạy chức năng này.
 
 ## 5. Công thức tổng và diễn giải
 
 `S = max(40, 100 − P − A)`, làm tròn 2 chữ số.
 
-Ví dụ: một vật rác sai chỗ (3), một áo sai chỗ (1,5), khung sai chiếm 15% ảnh (phạt diện tích 1,5) → **94/100**. Đây là thang nhẹ theo lựa chọn thiết kế, không phải kết luận phòng sạch.
+Ví dụ: một vật rác sai chỗ (3), một áo sai chỗ (1,5), contour sai chiếm 15% ảnh (phạt diện tích 1,5) → **94/100**. Đây là thang nhẹ theo lựa chọn thiết kế, không phải kết luận phòng sạch.
 
 Nhiều vật sai chỉ thuộc một loại: phạt vị trí tối đa 8 + diện tích tối đa 15 → điểm không thấp hơn 77. Nhiều loại sai dày đặc: tổng phạt tối đa 45+15 → điểm sàn 40. Điểm sàn không có nghĩa mọi ảnh đều đạt mức gọn gàng.
 
@@ -77,4 +85,4 @@ Nếu có phát hiện chưa đủ thông tin, kết quả ghi **điểm tạm t
 
 ## Đã và chưa xác minh
 
-Kiểm tra công thức, giới hạn điểm, mức phạt từng lớp, vùng chồng nhau, thiếu thông tin, thiếu checkpoint, API và thao tác giao diện. Đã kiểm tra với weights.pt thực tế bạn cung cấp: nạp mô hình, đọc 11 lớp, suy luận trên ảnh mẫu, chấm theo vùng và quy tắc, tải ảnh/báo cáo. Việc suy luận thành công không chứng minh độ chính xác trên ảnh mới; chưa có bộ ảnh gán nhãn độc lập để đánh giá precision/recall/mAP của checkpoint này. Chưa có đánh giá độc lập chứng minh điểm v3 chính xác hơn theo cảm nhận con người.
+Kiểm tra công thức, giới hạn điểm, mức phạt từng lớp, vùng chồng nhau, thiếu thông tin, thiếu checkpoint, API và thao tác giao diện. Đã kiểm tra với weights.pt thực tế bạn cung cấp: nạp mô hình, đọc 11 lớp, suy luận trên ảnh mẫu, chấm theo vùng và quy tắc, tải ảnh/báo cáo. Việc suy luận thành công không chứng minh độ chính xác trên ảnh mới; chưa có bộ ảnh gán nhãn độc lập để đánh giá precision/recall/mAP của checkpoint này. Chưa có đánh giá độc lập chứng minh điểm v4 chính xác hơn theo cảm nhận con người.

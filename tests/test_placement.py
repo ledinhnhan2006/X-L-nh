@@ -5,7 +5,12 @@ RULES={k:list(v[1]) for k,v in CLASSES.items()}
 def zone(kind, points=None):
     return dict(kind=kind, points=points or [[0,0],[1,0],[1,1],[0,1]])
 def detection(name='book',box=None):
-    return dict(name=name, confidence=.9, box=box or [10,10,30,30])
+    box=box or [10,10,30,30]
+    x1,y1,x2,y2=box
+    # Contour hình chữ nhật biết trước chỉ là dữ liệu hình học kiểm thử.
+    return dict(name=name, confidence=.9, box=box,area_status='estimated',
+                area_ratio=(x2-x1)*(y2-y1)/10000,
+                object_contours=[{'points':[[x1,y1],[x2,y1],[x2,y2],[x1,y2]],'hole':False,'depth':0}])
 
 class PlacementTests(unittest.TestCase):
     def score(self, detections,zones):

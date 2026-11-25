@@ -32,6 +32,13 @@ class WebTests(unittest.TestCase):
                 self.assertEqual(result['score'], expected)
                 self.assertAlmostEqual(result['score'], 100 - sum(result['deductions']), delta=.011)
                 self.assertIsNone(result['yolo_error'])
+                for obj in result['detections']:
+                    self.assertIn(obj['area_status'],['estimated','unavailable'])
+                    if obj['area_status']=='unavailable':
+                        self.assertIsNone(obj['area_ratio'])
+                    else:
+                        self.assertGreater(obj['area_pixels'],0)
+                        self.assertTrue(obj['object_contours'])
                 self.assertTrue(result['yolo_image'].startswith('data:image/jpeg;base64,'))
                 print(image.name, result['score'], len(result['detections']), 'YOLO detections')
         with self.assertRaises(urllib.error.HTTPError) as caught:
@@ -58,7 +65,7 @@ class WebTests(unittest.TestCase):
         forbidden=self.request(payload)
         self.assertGreater(forbidden['placement']['wrong'],0)
         self.assertLess(forbidden['score'],result['score'])
-        self.assertEqual(forbidden['placement']['method'],'placement_v3_gentle')
+        self.assertEqual(forbidden['placement']['method'],'placement_v4_contour')
         payload['zones']=[]
         with self.assertRaises(urllib.error.HTTPError) as caught:
             self.request(payload)

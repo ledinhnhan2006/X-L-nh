@@ -26,6 +26,6 @@
 
 ## Kiểm tra tích hợp
 
-Nạp được đúng weights.pt, kiểm tra API trạng thái mô hình và suy luận thực tế trên các ảnh mẫu. Trên room.jpg tại ngưỡng 0,25, nhận được các dự đoán pillow, book và blanket. Đây là đầu ra dự đoán, chưa được xác minh là nhãn đúng cho mọi khung. App dùng phát hiện đó để áp dụng quy tắc vị trí và công thức v3 trong PHUONG_PHAP_CHAM_DIEM.md.
+Nạp được đúng weights.pt, kiểm tra API trạng thái mô hình và suy luận thực tế trên các ảnh mẫu. Trên room.jpg tại ngưỡng 0,25, nhận được các dự đoán pillow, book và blanket. Đây là đầu ra dự đoán, chưa được xác minh là nhãn đúng cho mọi khung. App dùng phát hiện đó để áp dụng quy tắc vị trí và công thức v4 trong PHUONG_PHAP_CHAM_DIEM.md.
 
 Không có bộ test độc lập được đính kèm checkpoint để tính lại precision, recall hay mAP. Số ảnh huấn luyện do người dùng báo là 43, chưa được xác minh từ bộ dữ liệu. Không tuyên bố mô hình hoặc điểm số đạt độ chính xác cụ thể. Giữ điều kiện giấy phép áp dụng cho checkpoint từ nguồn huấn luyện; tệp này không được tái cấp phép chỉ bằng giấy phép mã nguồn app.

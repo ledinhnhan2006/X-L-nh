@@ -2,6 +2,7 @@
 import math
 import cv2
 import numpy as np
+from object_contours import union_contour_ratio
 
 CLASSES = {
     'bag': ('Túi (túi đựng đồ)', ['cabinet']),
@@ -85,7 +86,8 @@ def score_placement(detections, image_shape, zones, rules):
     polygons = validate_settings(zones, rules)
     h,w = image_shape[:2]
     # Raster chuẩn hóa giữ chi phí tính diện tích có giới hạn; diện tích chỉ xấp xỉ.
-    mask = np.zeros((512,512), np.uint8)
+    wrong_contours = []
+    area_unknown = 0
     rows, wrong, evaluated, raw_penalty = [], 0, 0, 0
     class_penalties = {}
     for det in detections:
@@ -117,24 +119,27 @@ def score_placement(detections, image_shape, zones, rules):
                     raw_penalty += CLASS_PENALTIES[key]
                     row_penalty = min(CLASS_PENALTIES[key], max(0, CLASS_CAP-class_penalties.get(key,0)))
                     class_penalties[key] = class_penalties.get(key,0) + row_penalty
-                    left,top = np.floor(np.array([x1,y1])*512).astype(int)
-                    right,bottom = np.ceil(np.array([x2,y2])*512).astype(int)
-                    mask[top:bottom,left:right] = 1
+                    if det.get('area_status') == 'estimated' and det.get('object_contours'):
+                        wrong_contours.append(det)
+                    else:
+                        area_unknown += 1
         rows.append({**det, 'class_key':key, 'display_name':CLASSES.get(key,(det['name'],))[0],
                      'region':region, 'state':state, 'reason':reason,
                      'position_penalty':row_penalty,
                      'base_position_penalty':CLASS_PENALTIES.get(key, 0) if state == 'wrong' else 0,
-                     'area_ratio':float(max(0,x2-x1)*max(0,y2-y1))})
-    area = float(mask.mean())
+                     'area_ratio':det.get('area_ratio'), 'area_status':det.get('area_status','unavailable'),
+                     'area_reason':det.get('area_reason','Chưa có contour, không dùng diện tích khung bao.')})
+    area = union_contour_ratio(wrong_contours,image_shape)
     deductions = [min(POSITION_CAP,sum(class_penalties.values())), min(AREA_CAP,max(0,area-AREA_ALLOWANCE)*30)]
     unknown = len(rows)-evaluated
     return dict(score=round(max(MIN_SCORE,BASE_SCORE-sum(deductions)),2) if evaluated else None,
                 detections=rows, evaluated=evaluated, unknown=unknown, wrong=wrong,
                 wrong_area_ratio=area, deductions=deductions, raw_position_penalty=raw_penalty,
-                method='placement_v3_gentle', baseline=BASE_SCORE, minimum_score=MIN_SCORE,
+                method='placement_v4_contour', area_method='grabcut_contour',
+                area_unknown_wrong=area_unknown, area_evaluated_wrong=len(wrong_contours), baseline=BASE_SCORE, minimum_score=MIN_SCORE,
                 class_penalties=class_penalties, class_cap=CLASS_CAP,
                 area_allowance=AREA_ALLOWANCE, assessment_confidence=ASSESSMENT_CONFIDENCE, coverage=round(evaluated/len(rows),3) if rows else 0,
                 provisional=True,
                 note='Thang điểm nhẹ: nền 100, sàn 40; tối đa 8 điểm mỗi loại, miễn 10% diện tích sai chỗ. Chỉ đánh giá phát hiện tin cậy từ 50%. Điểm thử nghiệm trên đồ vật nhận diện và đánh giá được; chưa xác nhận độ chính xác. ' +
                      ('Có đồ vật chưa đủ thông tin vị trí hoặc quy tắc. ' if unknown else '')+
-                     'Không phát hiện đồ vật không chứng minh phòng gọn. Diện tích là diện tích khung bao trên ảnh.')
+                     f'Có {area_unknown} vật sai chỗ chưa đo được contour; phần đó chưa bị trừ diện tích. Không phát hiện đồ vật không chứng minh phòng gọn. Diện tích contour là ước lượng, không bảo đảm tách đúng vật.')

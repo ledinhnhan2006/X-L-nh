@@ -14,6 +14,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
 from chamdiem import calculate_score
+from object_contours import measure_detections
 from placement_score import score_placement, CLASSES, ZONES, CLASS_PENALTIES, canonical_class
 
 OPEN_IMAGE = Image.open  # Giữ bộ đọc Pillow trước khi Ultralytics thay đổi Image.open.
@@ -106,6 +107,8 @@ def analyze(data):
                     confidence=float(box.conf.item()), box=box.xyxy[0].tolist()) for box in prediction.boxes]
         except Exception as exc:
             output['yolo_error'] = f'Không nạp/chạy được mô hình {configured_model_path().name}: {type(exc).__name__}: {str(exc)[:240]}. Kiểm tra weights.pt và phiên bản ultralytics; không dùng mô hình nền thay thế.'
+    if output['detections']:
+        output['detections'] = measure_detections(image,output['detections'])
     if placement:
         if output['yolo_error']:
             output['score'] = None
@@ -120,7 +123,9 @@ def analyze(data):
             for i, item in enumerate(output['placement']['detections'],1):
                 x1,y1,x2,y2 = map(int,item['box'])
                 color = colors[item['state']]
-                cv2.rectangle(audit,(x1,y1),(x2,y2),color,2)
+                for ring in item.get('object_contours',[]):
+                    polygon = np.round(ring['points']).astype(np.int32)
+                    cv2.polylines(audit,[polygon],True,color,2)
                 cv2.circle(audit,((x1+x2)//2,y2),4,color,-1)
                 text = f"#{i} {item['name']} {item['state']} -{item['position_penalty']}"
                 cv2.putText(audit,text,(max(0,x1),max(16,y1-5)),cv2.FONT_HERSHEY_SIMPLEX,.45,color,1,cv2.LINE_AA)
@@ -128,7 +133,7 @@ def analyze(data):
             output['score'] = output['placement']['score']
             value = output['score']
             output['label'] = ('Chưa đủ dữ liệu để chấm' if value is None else LABELS[3 if value >= 90 else 2 if value >= 75 else 1 if value >= 55 else 0])
-    if placement and output.get('placement', {}).get('unknown', 0) and output['score'] is not None:
+    if placement and (output.get('placement', {}).get('unknown', 0) or output.get('placement', {}).get('area_unknown_wrong',0)) and output['score'] is not None:
         output['label'] = 'Điểm tạm tính trên phần đã đánh giá'
     output['scoring_mode'] = 'placement' if placement else 'opencv'
     if MODEL is not None:
