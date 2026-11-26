@@ -1,0 +1,43 @@
+{
+  "images": 130,
+  "instances": 1086,
+  "human_images_recovered": 33,
+  "pending_original_images": 10,
+  "rejected_masks": 4,
+  "classes": {
+    "pillow": 90,
+    "blanket": 50,
+    "chair": 167,
+    "book": 655,
+    "laptop": 23,
+    "bag": 23,
+    "bottle": 20,
+    "trash": 6,
+    "clothes": 32,
+    "footwear": 7,
+    "handbag": 10,
+    "backpack": 3
+  },
+  "provenance": {
+    "human_box_plus_sam_draft": 532,
+    "automatic_detector_plus_sam_draft": 73,
+    "human_class_box_matched_coco_polygon": 110,
+    "coco_polygon_ultralytics_conversion": 371
+  },
+  "source_detection_project": "le-dinh-nhan/cham-diem-phong",
+  "target_segmentation_project": "le-dinh-nhan/cham-diem-phong-segmentation",
+  "source_human_images": 43,
+  "source_human_box_labels": 969,
+  "unique_uploaded_images": 130,
+  "images_with_draft_polygons": 124,
+  "images_pending_labels": 6,
+  "overview_screened_human_images": 33,
+  "fully_reviewed_images": 0,
+  "training_started": false,
+  "production_checkpoint_replaced": false,
+  "ready_to_train_verified_12_classes": false,
+  "blocked_image_hosts": [
+    "source.roboflow.com",
+    "storage.googleapis.com"
+  ]
+}

@@ -1,5 +1,7 @@
 # Bộ nháp instance segmentation: 100 ảnh phòng cũ + 30 ảnh mới
 
+**Cập nhật:** đã tạo project Roboflow và khôi phục nhãn gốc cho 33/43 ảnh. Xem [bộ nháp đã tải lên và phần còn thiếu](../segmentation_roboflow/README.md). Nội dung bên dưới mô tả lần chuẩn bị trước khi kết nối được API.
+
 **Chưa phải bộ dữ liệu hoàn chỉnh để train 12 lớp. Chưa huấn luyện checkpoint mới.**
 
 Đã chuẩn bị 130 ảnh thật, 793 nhãn đối tượng gồm 802 polygon sau khi loại 11 gợi ý sai rõ. Bộ này giúp tiết kiệm công gán nhãn, không thay thế việc kiểm tra đủ mọi đồ vật trong ảnh. Có 7 ảnh chưa có nhãn gợi ý nào; không được tự coi chúng là ảnh nền âm tính đã xác minh.

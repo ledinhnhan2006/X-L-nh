@@ -1,0 +1,54 @@
+[
+  {
+    "image": "room_072_coco_000000395701.jpg",
+    "box": {
+      "id": "7",
+      "label": "book",
+      "x": "367.00",
+      "y": "230.50",
+      "width": "4.00",
+      "height": "29.00",
+      "confidence": null
+    },
+    "reason": "SAM mask empty or inconsistent with human prompt"
+  },
+  {
+    "image": "room_093_coco_000000543581.jpg",
+    "box": {
+      "id": "7",
+      "label": "book",
+      "x": "262.00",
+      "y": "99.00",
+      "width": "4.00",
+      "height": "16.00",
+      "confidence": null
+    },
+    "reason": "SAM mask empty or inconsistent with human prompt"
+  },
+  {
+    "image": "room_093_coco_000000543581.jpg",
+    "box": {
+      "id": "E",
+      "label": "book",
+      "x": "255.00",
+      "y": "139.00",
+      "width": "6.00",
+      "height": "14.00",
+      "confidence": null
+    },
+    "reason": "SAM mask empty or inconsistent with human prompt"
+  },
+  {
+    "image": "room_070_coco_000000037740.jpg",
+    "box": {
+      "id": "9",
+      "label": "book",
+      "x": "623.00",
+      "y": "94.50",
+      "width": "6.00",
+      "height": "27.00",
+      "confidence": null
+    },
+    "reason": "SAM mask empty or inconsistent with human prompt"
+  }
+]
