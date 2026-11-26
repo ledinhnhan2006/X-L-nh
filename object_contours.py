@@ -1,4 +1,4 @@
-"""Ước lượng mặt nạ bằng GrabCut trong ROI YOLO, đo diện tích contour; không dùng diện tích box thay thế."""
+"""Đo contour từ mask segmentation hoặc GrabCut trong ROI của mô hình detection."""
 import cv2
 import numpy as np
 
@@ -73,12 +73,39 @@ def extract_object_contour(image,box,max_side=320):
             'roi_edge_pixels':int(cv2.countNonZero(edges))}
 
 
-def measure_detections(image,detections):
+def measure_mask_contour(mask,image_shape):
+    """Measure an instance mask aligned to the original image, including its holes."""
+    h,w=image_shape[:2]
+    failure={'area_method':'yolo_segmentation_contour','area_status':'unavailable',
+             'area_pixels':None,'area_ratio':None,'object_contours':[]}
+    if mask is None:
+        return {**failure,'area_reason':'Mô hình segmentation chưa trả về mặt nạ khớp với vật thể.'}
+    values=np.asarray(mask)
+    if values.ndim!=2 or values.shape!=(h,w) or not np.isfinite(values).all():
+        return {**failure,'area_reason':'Mặt nạ không khớp kích thước ảnh gốc hoặc có giá trị không hợp lệ.'}
+    binary=(values>.5).astype(np.uint8)*255
+    rings=contour_rings(binary)
+    area=geometric_area(rings)
+    if area<=0:
+        return {**failure,'area_reason':'Mặt nạ không có contour kín với diện tích dương.'}
+    return {'area_method':'yolo_segmentation_contour','area_status':'estimated',
+            'area_reason':'Contour lấy trực tiếp từ mặt nạ YOLO segmentation; cần kiểm tra độ khớp vật thể.',
+            'area_pixels':round(area,2),'area_ratio':area/(h*w),'object_contours':rings}
+
+
+def measure_detections(image,detections,instance_masks=None):
+    # None selects detection + GrabCut. An explicit mask iterator selects segmentation;
+    # a missing mask never quietly falls back to GrabCut or the rectangle's area.
+    masks=iter(instance_masks) if instance_masks is not None else None
     result=[]
     for det in detections:
+        mask=next(masks,None) if masks is not None else None
+        method='yolo_segmentation_contour' if masks is not None else 'grabcut_contour'
         if det.get('confidence',0)<.5:
-            area={'area_method':'grabcut_contour','area_status':'unavailable','area_reason':'Độ tin cậy dưới 50%, không đo diện tích để phạt.',
+            area={'area_method':method,'area_status':'unavailable','area_reason':'Độ tin cậy dưới 50%, không đo diện tích để phạt.',
                   'area_pixels':None,'area_ratio':None,'object_contours':[]}
+        elif masks is not None:
+            area=measure_mask_contour(mask,image.shape)
         else:
             area=extract_object_contour(image,det['box'])
         result.append({**det,**area})

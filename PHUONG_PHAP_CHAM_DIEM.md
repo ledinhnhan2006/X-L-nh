@@ -53,6 +53,16 @@ Bảng từng vật hiển thị khoản trừ sau giới hạn loại, trước
 
 ## 4. Diện tích đo bằng contour, không lấy khung chữ nhật
 
+### Khi dùng checkpoint instance segmentation
+
+App đọc `prediction.masks.data` theo đúng thứ tự các box. `ultralytics.utils.ops.scale_masks` bỏ phần đệm letterbox và đưa mặt nạ về kích thước ảnh gốc. Sau ngưỡng mặt nạ 0,5, app dùng `findContours(RETR_TREE, CHAIN_APPROX_SIMPLE)` và `cv2.contourArea`: cộng đường bao ngoài, trừ lỗ. Các phần rời của cùng mặt nạ vẫn được giữ lại. Báo cáo ghi `area_method: yolo_segmentation_contour`.
+
+Mô hình segmentation có thể tách sai biên hoặc bỏ sót vật; đây vẫn là diện tích ước lượng trên ảnh 2D, không phải diện tích thật theo m². Mặt nạ thiếu, rỗng, sai kích thước hoặc không hợp lệ sẽ không bị thay bằng diện tích box hay GrabCut. Điều kiện tin cậy từ 0,50, công thức hợp diện tích và mức trừ bên dưới giữ nguyên.
+
+Vị trí hiện vẫn dùng điểm giữa đáy khung bao như phần 1; mặt nạ mới thay đổi cách đo diện tích, chưa tự giải quyết góc nhìn hoặc tiếp xúc với mặt sàn.
+
+### Khi dùng checkpoint object detection
+
 YOLO chỉ cung cấp vùng tìm kiếm và tên đồ vật. App lấy ROI có thêm nền quanh box, giảm kích thước ROI về tối đa 320 pixel cạnh dài, Gaussian blur màu. Ảnh xám và Canny được tính cho thông tin cạnh; Canny không tự được coi là mặt nạ vật thể.
 
 GrabCut 3 vòng dùng màu ảnh, đánh dấu nền ngoài box và vùng có thể là vật bên trong box để tạo mặt nạ nhị phân. App loại các mảnh nhiễu rất nhỏ, dùng `findContours(RETR_TREE, CHAIN_APPROX_SIMPLE)` để lấy đường bao và lỗ bên trong. Diện tích từng vật = tổng `cv2.contourArea` của đường bao ngoài, trừ diện tích các lỗ, quy đổi về tọa độ ảnh gốc sau khi resize ROI.
@@ -69,7 +79,7 @@ Giữ mức trừ nhẹ như trước:
 
 Nếu vật quá nhỏ, khung bao trùm toàn ảnh không có nền, ảnh đồng màu, GrabCut thất bại hoặc mặt nạ gần phủ nguyên box, app ghi **diện tích chưa đủ thông tin**, để area_ratio/area_pixels là null và không tính diện tích phần đó. Không dùng box để thay thế, không ghi là đo được diện tích 0. Phạt vị trí vẫn được tính nếu đủ điều kiện; kết quả ghi điểm tạm tính nếu còn vật sai chỗ chưa đo được diện tích.
 
-GrabCut không được huấn luyện để hiểu từng lớp, nên có thể lấy nhầm nền hoặc đồ khác trong ROI. Contour chỉ là ước lượng cần kiểm tra, đặc biệt với chăn nhiều họa tiết, vật bị che và vật có màu gần nền. Các tiêu chí loại bỏ trên không chứng minh một contour còn lại là đúng vật. Đây không phải instance segmentation được huấn luyện; không cần train lại weights.pt để chạy chức năng này.
+GrabCut không được huấn luyện để hiểu từng lớp, nên có thể lấy nhầm nền hoặc đồ khác trong ROI. Contour chỉ là ước lượng cần kiểm tra, đặc biệt với chăn nhiều họa tiết, vật bị che và vật có màu gần nền. Các tiêu chí loại bỏ trên không chứng minh một contour còn lại là đúng vật. Nhánh detection + GrabCut không phải instance segmentation được huấn luyện; không cần train lại weights.pt để chạy riêng nhánh này.
 
 ## 5. Công thức tổng và diễn giải
 

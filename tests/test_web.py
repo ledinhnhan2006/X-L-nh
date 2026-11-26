@@ -32,7 +32,9 @@ class WebTests(unittest.TestCase):
                 self.assertEqual(result['score'], expected)
                 self.assertAlmostEqual(result['score'], 100 - sum(result['deductions']), delta=.011)
                 self.assertIsNone(result['yolo_error'])
+                expected_area_method='yolo_segmentation_contour' if result.get('model_task')=='segment' else 'grabcut_contour'
                 for obj in result['detections']:
+                    self.assertEqual(obj['area_method'],expected_area_method)
                     self.assertIn(obj['area_status'],['estimated','unavailable'])
                     if obj['area_status']=='unavailable':
                         self.assertIsNone(obj['area_ratio'])
@@ -61,7 +63,10 @@ class WebTests(unittest.TestCase):
         self.assertGreater(result['placement']['evaluated'],0)
         self.assertEqual(result['placement']['wrong'],0)
         self.assertEqual(result['score'],100)
-        payload['rules']['book']=[]
+        # Exercise the rule change for a class this checkpoint actually assessed.
+        assessed=[row['class_key'] for row in result['placement']['detections'] if row['state']=='correct']
+        self.assertTrue(assessed)
+        payload['rules'][assessed[0]]=[]
         forbidden=self.request(payload)
         self.assertGreater(forbidden['placement']['wrong'],0)
         self.assertLess(forbidden['score'],result['score'])

@@ -132,10 +132,12 @@ def score_placement(detections, image_shape, zones, rules):
     area = union_contour_ratio(wrong_contours,image_shape)
     deductions = [min(POSITION_CAP,sum(class_penalties.values())), min(AREA_CAP,max(0,area-AREA_ALLOWANCE)*30)]
     unknown = len(rows)-evaluated
+    area_methods={det.get('area_method','grabcut_contour') for det in detections}
+    area_method=next(iter(area_methods)) if len(area_methods)==1 else 'mixed_contours' if area_methods else 'unavailable'
     return dict(score=round(max(MIN_SCORE,BASE_SCORE-sum(deductions)),2) if evaluated else None,
                 detections=rows, evaluated=evaluated, unknown=unknown, wrong=wrong,
                 wrong_area_ratio=area, deductions=deductions, raw_position_penalty=raw_penalty,
-                method='placement_v4_contour', area_method='grabcut_contour',
+                method='placement_v4_contour', area_method=area_method,
                 area_unknown_wrong=area_unknown, area_evaluated_wrong=len(wrong_contours), baseline=BASE_SCORE, minimum_score=MIN_SCORE,
                 class_penalties=class_penalties, class_cap=CLASS_CAP,
                 area_allowance=AREA_ALLOWANCE, assessment_confidence=ASSESSMENT_CONFIDENCE, coverage=round(evaluated/len(rows),3) if rows else 0,

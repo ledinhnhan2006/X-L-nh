@@ -50,7 +50,7 @@ def model_info():
             classes = list(model.names.values())
         known = {canonical_class(n) for n in classes}
         return dict(ready=True, file=configured_model_path().name, classes=classes,
-                    missing_classes=[k for k in CLASSES if k not in known])
+                    task=model.task, missing_classes=[k for k in CLASSES if k not in known])
     except Exception as exc:
         return dict(ready=False, file=configured_model_path().name,
                     error=f'{type(exc).__name__}: {str(exc)[:240]}')
@@ -61,6 +61,17 @@ def image_url(image):
     if not ok:
         raise ValueError('Không thể tạo ảnh kết quả.')
     return 'data:image/jpeg;base64,' + base64.b64encode(encoded).decode()
+
+
+def segmentation_masks(prediction,image_shape):
+    """Undo YOLO letterbox padding before measuring masks in original-image pixels."""
+    from ultralytics.utils.ops import scale_masks
+    if prediction.masks is None or len(prediction.masks.data)!=len(prediction.boxes):
+        yield from (None for _ in prediction.boxes)
+        return
+    for mask in prediction.masks.data:
+        scaled=scale_masks(mask[None,None],image_shape[:2])[0,0]
+        yield scaled.cpu().numpy()
 
 
 def analyze(data):
@@ -96,19 +107,23 @@ def analyze(data):
     if isinstance(confidence, bool) or not isinstance(confidence, (float, int)) or not .1 <= confidence <= .9:
         raise ValueError('Ngưỡng tin cậy phải từ 0,10 đến 0,90.')
     output['confidence_threshold'] = confidence
+    masks = None
     if data.get('yolo', False):
         try:
             with MODEL_LOCK:
                 model = load_model()
-                prediction = model.predict(image, device='cpu', conf=confidence, verbose=False)[0]
+                prediction = model.predict(image, device='cpu', imgsz=640, conf=confidence, verbose=False)[0]
                 output['model_file'] = configured_model_path().name
+                output['model_task'] = model.task
                 output['yolo_image'] = image_url(prediction.plot())
                 output['detections'] = [dict(name=MODEL.names[int(box.cls.item())],
                     confidence=float(box.conf.item()), box=box.xyxy[0].tolist()) for box in prediction.boxes]
+                if model.task == 'segment':
+                    masks = segmentation_masks(prediction,image.shape)
         except Exception as exc:
             output['yolo_error'] = f'Không nạp/chạy được mô hình {configured_model_path().name}: {type(exc).__name__}: {str(exc)[:240]}. Kiểm tra weights.pt và phiên bản ultralytics; không dùng mô hình nền thay thế.'
     if output['detections']:
-        output['detections'] = measure_detections(image,output['detections'])
+        output['detections'] = measure_detections(image,output['detections'],masks)
     if placement:
         if output['yolo_error']:
             output['score'] = None

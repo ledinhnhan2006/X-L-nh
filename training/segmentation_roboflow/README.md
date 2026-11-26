@@ -1,5 +1,7 @@
 # Dự án segmentation đã tạo trên Roboflow
 
+**Cập nhật phiên bản 1:** đã ghép đủ 43 ảnh gốc, đưa 140 ảnh vào Dataset và hoàn tất train YOLO11 Nano Segmentation; bản chọn cho app được fine-tune lại từ COCO bằng Ultralytics. Xem [checkpoint và báo cáo mới](../../MODEL_SEGMENTATION_V1.md). Số liệu/chặn mạng bên dưới là snapshot của lần chuẩn bị 130 ảnh trước đó.
+
 Dự án mới: https://app.roboflow.com/le-dinh-nhan/cham-diem-phong-segmentation
 
 **Đã tải 130 ảnh và nhãn polygon nháp lên Roboflow. Chưa huấn luyện checkpoint mới.** Dự án detection gốc và `weights.pt` của ứng dụng được giữ nguyên.
