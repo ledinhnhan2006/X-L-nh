@@ -1,6 +1,6 @@
 # YOLO11 Nano Instance Segmentation — phiên bản 1
 
-Dataset và lượt train thử đầu tiên đã hoàn tất trên Roboflow. Checkpoint được chọn cho app là bản Ultralytics fine-tune từ COCO chạy trên máy đám mây sau khi bản hosted đầu tiên không đạt kiểm tra. App đọc mặt nạ của mô hình để đo contour/diện tích; công thức trừ điểm và điểm giữa đáy box dùng xác định vị trí giữ như tài liệu chấm điểm.
+Dataset và lượt train thử đầu tiên đã hoàn tất trên Roboflow. Checkpoint được chọn cho app là bản Ultralytics fine-tune từ COCO chạy trên máy đám mây sau khi bản hosted đầu tiên không đạt kiểm tra. App đọc mặt nạ để đo contour/diện tích. Trang chính hiện dùng [công thức v5 và rà soát thủ công](PHUONG_PHAP_V5.md): điểm đặt lấy từ phần thấp nhất của mask, có thể sửa vùng/vị trí bằng mắt thường.
 
 - Dataset: [cham-diem-phong-segmentation/1](https://app.roboflow.com/le-dinh-nhan/cham-diem-phong-segmentation/1), 140 ảnh: 127 train, 6 validation, 7 test.
 - Đã ghép đủ 43 ảnh gốc: 33 ảnh trùng bộ rooms100, 10 ảnh bổ sung. Có 30 ảnh bổ sung từ lần chuẩn bị trước, nên tổng không cộng trùng thành 173.
@@ -13,7 +13,7 @@ Dataset và lượt train thử đầu tiên đã hoàn tất trên Roboflow. Ch
 
 ## Mở ứng dụng
 
-Giải nén toàn bộ gói app vào một thư mục. Đóng cửa sổ app cũ, rồi nhấp đúp `start_segmentation_windows.bat`. Nếu chưa có `.venv` trong thư mục này, script gọi trình cài có sẵn; cần Python 3.12. Khi trang mở, trạng thái phải hiện `weights_segmentation.pt (segmentation)` và 12 lớp. Chọn ảnh, khoanh vùng, sửa quy tắc nếu cần rồi chấm ảnh.
+Giải nén toàn bộ gói app vào một thư mục. Đóng cửa sổ app cũ, rồi nhấp đúp `start_phan_tich_windows.bat` hoặc `start_segmentation_windows.bat`. Nếu chưa có `.venv`, script gọi trình cài; cần Python 3.12. Trạng thái trên trang hiển thị `weights_segmentation.pt`, segmentation và 12 lớp. Chọn ảnh, phân tích, khoanh vùng, rà soát vật rồi chấm điểm.
 
 Gói app tải về đã kèm `weights_segmentation.pt`. Nếu chỉ lấy mã nguồn từ GitHub, đặt checkpoint segmentation đã huấn luyện vào cạnh `web_app.py` dưới tên này; launcher chọn nó bằng YOLO_MODEL_PATH. `start_windows.bat`/`start_app.bat` vẫn dùng lựa chọn mô hình mặc định cũ.
 
@@ -58,4 +58,4 @@ Các số này đo mức khớp với nhãn nháp trong 7 ảnh giữ lại, kh�
 
 `prediction.masks.data` → bỏ đệm letterbox/scale_masks → mặt nạ ở kích thước ảnh gốc → ngưỡng 0,5 → findContours(RETR_TREE) → cộng contourArea đường bao ngoài, trừ lỗ. Phần chồng của đồ sai vị trí chỉ tính một lần khi phạt diện tích. Trường báo cáo: `yolo_segmentation_contour`. Thiếu mask hoặc tin cậy dưới 0,50 thì không dùng diện tích box thay thế.
 
-Xem [công thức chấm điểm](PHUONG_PHAP_CHAM_DIEM.md). Mặt nạ 2D chưa cung cấp diện tích m² hoặc tự xác nhận đúng vị trí/gọn gàng.
+Ở trang v5, gợi ý dưới 50% vẫn giữ mask để người dùng rà soát nhưng không tự bị tính điểm. Xác nhận thủ công không thay đổi độ tin cậy mô hình gốc. Xem [công thức chấm điểm v5](PHUONG_PHAP_V5.md). Mặt nạ 2D không cung cấp diện tích m² hoặc tự xác nhận phòng gọn.

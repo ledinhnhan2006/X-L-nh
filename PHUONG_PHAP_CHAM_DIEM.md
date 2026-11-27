@@ -1,5 +1,7 @@
 # Phương pháp chấm ảnh YOLO v4 — diện tích contour, thang điểm nhẹ
 
+Bản này dùng cho giao diện cũ tại `/legacy`. Trang chính hiện dùng [phương pháp v5 có rà soát thủ công, hình học và ảnh từng bước](PHUONG_PHAP_V5.md).
+
 ## Mở app với mô hình đã huấn luyện của bạn
 
 1. Tải bản mới từ GitHub: Code → Download ZIP. Giải nén vào thư mục mới, không làm mất thư mục/mô hình cũ.

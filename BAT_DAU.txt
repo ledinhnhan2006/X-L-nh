@@ -1,0 +1,26 @@
+GÓC GỌN — PHÂN TÍCH ẢNH VÀ CHẤM ĐIỂM V5
+
+1. Nhấp phải tệp ZIP > Extract All / Giải nén tất cả.
+2. Mở thư mục đã giải nén. Nhấp đúp start_phan_tich_windows.bat.
+3. Lần đầu máy cần Python 3.12 và Internet để cài thư viện.
+   Nếu báo thiếu Python 3.12: mở CMD, chạy py install 3.12, rồi mở lại file .bat.
+4. Giữ cửa sổ lệnh mở. Trình duyệt sẽ mở http://127.0.0.1:8000 trên máy của bạn.
+
+TRONG ỨNG DỤNG
+Thêm ảnh > Phân tích ảnh > Khoanh vùng / Rà soát > Chấm điểm ảnh.
+
+- Xem “Ảnh từng bước” để thấy ảnh xám, Gaussian, Canny, contour, mask và hình học.
+- Xem “Thông số hình học” để biết diện tích contour, chu vi, tâm, độ tròn, độ đặc.
+- Chọn vật để sửa lớp, số lượng, vùng và vị trí; có thể vẽ lại đường bao.
+- “Thêm vật bằng mắt thường” cho đồ bị YOLO bỏ sót.
+- Nếu chỉ nhập vị trí/số lượng: thêm vật rồi Hủy bước vẽ; diện tích để chưa đủ dữ liệu.
+- Vật không rõ: Chờ xác nhận hoặc Bỏ qua. Vật bỏ qua không bị trừ điểm.
+- Đồ đúng chỗ nhưng bừa: đánh dấu “Đúng vị trí nhưng cần sắp xếp”.
+- “Tải báo cáo + ảnh từng bước” tạo ZIP có JSON, CSV và ảnh xử lý.
+
+Điểm nền 100, tổng trừ tối đa 60, điểm sàn 40. Không có vật đủ thông tin thì không tự cho điểm.
+Diện tích lấy từ mask/đường bao, không lấy khung vuông. Đây là tỷ lệ trên ảnh 2D, không phải m².
+Mô hình còn nhận sai/bỏ sót: cần kiểm tra bằng mắt. Điểm theo quy tắc, chưa kiểm chứng bằng bộ điểm chuẩn.
+
+Công thức và các hàm được giải thích trong PHUONG_PHAP_V5.md; tổng quan tại README.md.
+Mã nguồn trên GitHub không kèm checkpoint segmentation mới; gói tải đầy đủ có file này.

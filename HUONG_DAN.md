@@ -1,4 +1,4 @@
-> **Bản mới:** Chép `weights.pt` cạnh `web_app.py`; lần đầu chạy `start_windows.bat`, sau đó mở `start_app.bat`. Xem [phương pháp YOLO v2](PHUONG_PHAP_CHAM_DIEM.md) cho công thức và hướng dẫn hiện hành. Các phần bên dưới mô tả thêm quy trình OpenCV/phiên bản trước.
+> **Bản hiện tại v5:** Giải nén toàn bộ gói app, nhấp đúp `start_phan_tich_windows.bat`. Thêm ảnh → Phân tích → Rà soát vật → Chấm điểm. Xem [hướng dẫn hiện hành và công thức](PHUONG_PHAP_V5.md). Các phần bên dưới lưu quy trình của những phiên bản cũ.
 
 # Chạy giao diện Góc Gọn
 

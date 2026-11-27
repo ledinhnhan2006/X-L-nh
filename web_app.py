@@ -14,10 +14,11 @@ import cv2
 import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
 from chamdiem import calculate_score
-from object_contours import measure_detections
+from object_contours import measure_detections, measure_mask_contour, extract_object_contour
 from placement_score import score_placement, CLASSES, ZONES, CLASS_PENALTIES, canonical_class
 
 OPEN_IMAGE = Image.open  # Giữ bộ đọc Pillow trước khi Ultralytics thay đổi Image.open.
+from image_workbench import create_session,scoring_result,export_result
 ROOT = Path(__file__).resolve().parent
 MODEL = None
 MODEL_FILE = None
@@ -72,6 +73,22 @@ def segmentation_masks(prediction,image_shape):
     for mask in prediction.masks.data:
         scaled=scale_masks(mask[None,None],image_shape[:2])[0,0]
         yield scaled.cpu().numpy()
+
+
+def detect_for_workbench(image,confidence):
+    """Keep low-confidence geometry for human review without pretending it is confirmed."""
+    with MODEL_LOCK:
+        model=load_model()
+        prediction=model.predict(image,device='cpu',imgsz=640,conf=confidence,max_det=100,verbose=False)[0]
+        detections=[dict(name=model.names[int(box.cls.item())],confidence=float(box.conf.item()),
+                         box=box.xyxy[0].tolist()) for box in prediction.boxes]
+        if model.task=='segment':
+            for det,mask in zip(detections,segmentation_masks(prediction,image.shape)):
+                det.update(measure_mask_contour(mask,image.shape))
+        else:
+            for det in detections:det.update(extract_object_contour(image,det['box']))
+        info={'file':configured_model_path().name,'task':model.task,'classes':list(model.names.values())}
+    return detections,info
 
 
 def analyze(data):
@@ -175,6 +192,12 @@ class Handler(BaseHTTPRequestHandler):
             self.send(200, {'classes': {k:{'label':v[0], 'allowed':v[1], 'penalty':CLASS_PENALTIES[k]} for k,v in CLASSES.items()}, 'zones':ZONES})
         elif self.path == '/placement.js':
             self.send(200, (ROOT / 'web' / 'placement.js').read_bytes(), 'text/javascript; charset=utf-8')
+        elif self.path == '/app.js':
+            self.send(200,(ROOT/'web'/'app.js').read_bytes(),'text/javascript; charset=utf-8')
+        elif self.path == '/styles.css':
+            self.send(200,(ROOT/'web'/'styles.css').read_bytes(),'text/css; charset=utf-8')
+        elif self.path == '/legacy':
+            self.send(200,(ROOT/'web'/'legacy.html').read_bytes(),'text/html; charset=utf-8')
         elif self.path == '/health':
             self.send(200, {'status': 'ok'})
         elif self.path == '/sample':
@@ -183,7 +206,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send(404, {'error': 'Không tìm thấy trang.'})
 
     def do_POST(self):
-        if self.path != '/api/analyze':
+        endpoints=['/api/analyze','/api/workbench/analyze','/api/workbench/score','/api/workbench/export']
+        if self.path not in endpoints:
             return self.send(404, {'error': 'Không tìm thấy chức năng.'})
         try:
             size = int(self.headers.get('Content-Length', '0'))
@@ -192,7 +216,11 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(self.rfile.read(size))
             if not isinstance(data, dict):
                 raise ValueError('Yêu cầu không hợp lệ.')
-            self.send(200, analyze(data))
+            if self.path=='/api/analyze':self.send(200,analyze(data))
+            else:
+                if self.path.endswith('/analyze'):self.send(200,create_session(data,detect_for_workbench))
+                elif self.path.endswith('/score'):self.send(200,scoring_result(data))
+                else:self.send(200,export_result(data),'application/zip')
         except (ValueError, TypeError, Image.DecompressionBombError) as exc:
             self.send(400, {'error': str(exc)})
         except Exception:
