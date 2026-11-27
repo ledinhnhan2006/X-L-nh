@@ -23,4 +23,6 @@ Diện tích lấy từ mask/đường bao, không lấy khung vuông. Đây là
 Mô hình còn nhận sai/bỏ sót: cần kiểm tra bằng mắt. Điểm theo quy tắc, chưa kiểm chứng bằng bộ điểm chuẩn.
 
 Công thức và các hàm được giải thích trong PHUONG_PHAP_V5.md; tổng quan tại README.md.
-Mã nguồn trên GitHub không kèm checkpoint segmentation mới; gói tải đầy đủ có file này.
+Gói Download ZIP trên GitHub đã kèm weights_segmentation.pt.
+Nếu đã tải mã nguồn trước đó: tải riêng mô hình tại địa chỉ dưới, chép cạnh web_app.py rồi mở lại launcher.
+https://raw.githubusercontent.com/ledinhnhan2006/X-L-nh/main/weights_segmentation.pt

@@ -15,9 +15,9 @@ Dataset và lượt train thử đầu tiên đã hoàn tất trên Roboflow. Ch
 
 Giải nén toàn bộ gói app vào một thư mục. Đóng cửa sổ app cũ, rồi nhấp đúp `start_phan_tich_windows.bat` hoặc `start_segmentation_windows.bat`. Nếu chưa có `.venv`, script gọi trình cài; cần Python 3.12. Trạng thái trên trang hiển thị `weights_segmentation.pt`, segmentation và 12 lớp. Chọn ảnh, phân tích, khoanh vùng, rà soát vật rồi chấm điểm.
 
-Gói app tải về đã kèm `weights_segmentation.pt`. Nếu chỉ lấy mã nguồn từ GitHub, đặt checkpoint segmentation đã huấn luyện vào cạnh `web_app.py` dưới tên này; launcher chọn nó bằng YOLO_MODEL_PATH. `start_windows.bat`/`start_app.bat` vẫn dùng lựa chọn mô hình mặc định cũ.
+Gói app và Download ZIP trên GitHub đã kèm `weights_segmentation.pt`. Với bản mã nguồn đã tải trước đó, [tải riêng checkpoint khoảng 6 MB](https://raw.githubusercontent.com/ledinhnhan2006/X-L-nh/main/weights_segmentation.pt), chép cạnh `web_app.py`; launcher chọn nó bằng YOLO_MODEL_PATH. `start_windows.bat`/`start_app.bat` vẫn dùng lựa chọn mô hình mặc định cũ.
 
-Checkpoint COCO fine-tune được chọn hiện được giữ trong gói tải về; project Roboflow vẫn giữ lượt hosted T1 để đối chiếu. Việc tải checkpoint mới trở lại Roboflow đã bị kiểm tra phê duyệt tự động chặn vì chưa có ủy quyền rõ cho bước tải mô hình mới lên dịch vụ. Dataset trên Roboflow đã đủ 140 ảnh và lượt train hosted đã hoàn tất.
+Checkpoint COCO fine-tune được chọn đã được công khai trên GitHub theo xác nhận của chủ dự án để tải trực tiếp khi đường artifact không dùng được. Project Roboflow vẫn giữ lượt hosted T1 để đối chiếu; dataset đã đủ 140 ảnh và lượt train hosted đã hoàn tất.
 
 ## Ánh xạ lớp trong checkpoint
 

@@ -17,7 +17,7 @@ Thêm ảnh căn phòng, xem ảnh sau từng bước xử lý, sửa gợi ý Y
 
 Không cần chép `.venv` từ ZIP: launcher tạo môi trường trên Windows. Mô hình 12 lớp còn bỏ sót/nhận sai nhiều vật, vì vậy hãy rà soát dự đoán.
 
-Nếu chỉ tải mã nguồn GitHub, đặt checkpoint cung cấp riêng dưới tên `weights_segmentation.pt` cạnh `web_app.py`. `start_segmentation_windows.bat` yêu cầu checkpoint này; `start_windows.bat`/`start_app.bat` dùng mô hình cũ khi không đặt `YOLO_MODEL_PATH`.
+Checkpoint `weights_segmentation.pt` hiện đã có trong kho GitHub và gói Download ZIP. Nếu đã tải bản mã nguồn trước đó, [tải riêng mô hình khoảng 6 MB](https://raw.githubusercontent.com/ledinhnhan2006/X-L-nh/main/weights_segmentation.pt), chép cạnh `web_app.py` rồi mở `start_phan_tich_windows.bat`. `start_segmentation_windows.bat` cũng chọn checkpoint này; `start_windows.bat`/`start_app.bat` dùng mô hình cũ khi không đặt `YOLO_MODEL_PATH`.
 
 ## Cách dùng
 

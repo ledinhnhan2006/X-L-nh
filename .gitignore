@@ -9,6 +9,7 @@ dataset/
 *.pt
 !yolo11n.pt
 !weights.pt
+!/weights_segmentation.pt
 
 # Cấu hình đường dẫn dataset theo máy
 training/starter100/data-local.yaml
